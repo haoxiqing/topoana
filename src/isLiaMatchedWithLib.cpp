@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdlib>
 
-bool topoana::isLiaMatchedWithLib(list<int> & lia, list<int> & lib)
+bool topoana::isLiaMatchedWithLib(list<int> & lia, list<int> & lib, string option)
 {
   if(lia.size()<2)
     {
@@ -28,8 +28,8 @@ bool topoana::isLiaMatchedWithLib(list<int> & lia, list<int> & lib)
     }
   else
     {
-      // The following if statement is designed for the inclusive decays started directly from the initial e+ and e-.
-      if((*liita)==-11)
+      // The following if statement is designed for the inclusive decays started directly from the initial particles.
+      if((*liita)==m_pidOfISt2)
         {
           liita++;
           liitb++;
@@ -41,6 +41,11 @@ bool topoana::isLiaMatchedWithLib(list<int> & lia, list<int> & lib)
           for(liitb++;liitb!=lib.end();liitb++)
             {
               if((*liitb)==(*liita)) break; 
+              else if((option=="Is"||option=="Is-IRA")&&(*liitb)!=m_pidOfSISRGam) return false;
+              else if((option=="Ig"||option=="Ig-IRA")&&(*liitb)!=m_pidOfGISRGam) return false;
+              else if((option=="Fs"||option=="Fs-IRA")&&(*liitb)!=m_pidOfSFSRGam) return false;
+              else if((option=="Fg"||option=="Fg-IRA")&&(*liitb)!=m_pidOfGFSRGam) return false;
+              // The four else if statements above are added to restrict the remaining particles unspecified in the inclusive decay to strict ISR, generalized ISR, strict FSR, and generalized FSR photons, respectively. The logic involved here is somewhat complicated, please think it carefully. At present, it is also fine without ``||option=="Is-IRA"``, ``||option=="Ig-IRA"``, ``||option=="Fs-IRA"``, and ``||option=="Fg-IRA"`` in these else if statements.
             }
         }
       if(liitb==lib.end()) return false;

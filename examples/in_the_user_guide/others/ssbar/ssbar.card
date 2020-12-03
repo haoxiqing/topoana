@@ -1,0 +1,15 @@
+% Names of input root files
+{
+  ../../../in_the_paper/input/ssbar1.root
+  ../../../in_the_paper/input/ssbar2.root
+}
+
+% TTree name
+{
+  evt
+}
+
+% Component analysis --- decay trees
+{
+  Y 	5     Y
+}

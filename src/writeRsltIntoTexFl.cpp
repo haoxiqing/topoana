@@ -8,7 +8,7 @@ void topoana::writeRsltIntoTexFl()
 {
   if(m_anaTasksForSigIds=="T"&&m_vPid_compDcyBrP.size()==0&&m_vPid_compCascDcyBrP.size()==0&&m_vPid_compDcyFStP.size()==0&&m_vPid_compProdBrP.size()==0&&m_vPid_compMP.size()==0&&m_vCompIncDcyBr.size()==0&&m_vCompIRADcyBr.size()==0&&m_compAnaOfDcyTrs==false&&m_compAnaOfDcyIFSts==false) return;
 
-  string NmOfOptTexFl=m_mainNmOfOptFls+".tex";
+  string NmOfOptTexFl=m_comNmOfOptFls+".tex";
   ofstream fout(NmOfOptTexFl.c_str(),ios::out);
   if(!fout)
     {
@@ -84,8 +84,7 @@ void topoana::writeRsltIntoTexFl()
   fout<<"\\newcommand{\\topoTags}[1]{#1} % Use this definition to retain topology tags."<<endl;
   fout<<"% \\newcommand{\\topoTags}[1]{} % Use this definition to remove topology tags."<<endl;
   fout<<"\\begin{document}"<<endl;
-  fout<<"\\title{Topology Analysis \\footnote{\\normalsize{This package is implemented with reference to a program called {\\sc Topo}, which is developed by Prof. Shuxian Du from Zhengzhou University in China and has been widely used by people in BESIII collaboration. Several years ago, when I was a PhD student working on BESIII experiment, I learned the idea of topology analysis and a lot of programming techniques from the {\\sc Topo} program. So, I really appreciate Prof. Du's original work very much. To meet my own needs and to practice developing analysis tools with C++, ROOT and LaTex, I wrote the package from scratch. At that time, the package functioned well but was relatively simple. At the end of last year (2017), my co-supervisor, Prof. Chengping Shen reminded me that it could be a useful tool for Belle II experiment as well. So, I revised and extended it, making it more well-rounded and suitable for Belle II experiment. Here, I would like to thank Prof. Du for his orignial work, Prof. Shen for his suggestion and encouragement, and Xian Xiong, Wencheng Yan, Sen Jia, Yubo Li, Suxian Li, Longke Li, Guanda Gong, Junhao Yin, Xiaoping Qin, Xiqing Hao, HongPeng Wang, JiaWei Zhang, Yeqi Chen and Runqiu Ma for their efforts in helping me test the program. I would also like to thank my good friend Xi Chen, a professional programmer, for his suggestion in core algrithm and efficiency.}} \\\\ \\vspace{0.1cm} \\Large{("<<m_verNum<<")}}"<<endl;
-  fout<<"\\author{Xingyu Zhou \\footnote{\\normalsize{Email: zhouxy@buaa.edu.cn}} \\\\ \\vspace{0.1cm} Beihang University}"<<endl;
+  fout<<"\\title{Topology Analysis \\footnote{\\small{Xingyu Zhou, Beihang University, zhouxy@buaa.edu.cn}} \\footnote{\\small{This package is implemented referring to a program called {\\sc Topo}, which is first developed by Prof. Shuxian Du from Zhengzhou University and later extended and maintained by Prof. Gang Li from Institute of High Energy Physics, Chinese Academy of Sciences. The {\\sc Topo} program has been widely used by colleagues in BESIII collaboration. Several years ago, when I was a Ph.D. student working on the BESIII experiment, I learned the idea of topology analysis and a lot of programming techniques from the {\\sc Topo} program. So, I really appreciate the original works of Prof. Du and Prof. Li very much. To meet my own needs and to practice developing analysis tools with C++, ROOT, and LaTeX, I wrote the package from scratch. At that time, the package functioned well but was relatively simple. At the end of 2017, my co-supervisor, Prof. Chengping Shen reminded me that it could be a useful tool for the Belle II experiment as well. So, I revised and extended it, making it more well-rounded and suitable for the Belle II experiment. Now, it also applies to many other similar high energy physics experiments. Here, I would like to thank Prof. Du and Prof. Li for their original works, and Prof. Shen for his suggestion, guidance, support, and encouragement.}} \\footnote{\\small{Besides, I would like to thank all of the people who have helped me in the development of the program. I am particularly grateful to Prof. Xingtao Huang for his comments on the principles and styles of the program, to Remco de Boer for his suggestions on the tex output and the use of GitHub, and to Xi Chen for his discussions on the core algorithms. I am especially indebted to Prof. Xiqing Hao, Longke Li, Xiaoping Qin, Ilya Komarov, Yubo Li, Guanda Gong, Suxian Li, Junhao Yin, Prof. Xiaolong Wang, Yeqi Chen, Hannah Wakeling, Hongrong Qi, Hui Li, Ning Cao, Sanjeeda Bharati Das, Kazuki Kojima, Tingting Han, Fang Yan, and Lin Wang for their advice in extending and perfecting the program. Also, I thank Xi'an Xiong, Runqiu Ma, Wencheng Yan, Sen Jia, Lu Cao, Dong Liu, Hongpeng Wang, Jiawei Zhang, Jiajun Liu, Maoqiang Jing, Yi Zhang, Wei Shan, and Yadi Wang for their efforts in helping me test the program.}} \\footnote{\\small{The paper on the tool has been published by {\\it Computer Physics Communications}. You can find this paper and the preprint corresponding to it in the links \\href{https://doi.org/10.1016/j.cpc.2020.107540}{Comput. Phys. Commun. 258 (2021) 107540} and \\href{https://arxiv.org/abs/2001.04016}{arXiv:2001.04016}, respectively. If the tool really helps your researches, we would appreciate it very much if you could cite the paper in your publications.}} \\\\ \\vspace{1cm} \\Large{("<<m_verNum<<")}}"<<endl;
   fout<<"\\maketitle"<<endl;
   fout<<endl<<"\\clearpage"<<endl<<endl;
   fout<<"\\newgeometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}"<<endl<<endl;
@@ -104,6 +103,7 @@ void topoana::writeRsltIntoTexFl()
       vector< list<int> > dcyTr;
       list<int> dcyBr;
       list<int> dcyIFSts;
+      vector<int> vIMDcyBr;
       nCEtr=0;
       bool isSigDcyTr;
       unsigned int iSigDcyTr=0;
@@ -157,6 +157,7 @@ void topoana::writeRsltIntoTexFl()
             }
           dcyTr.clear();
           dcyTr=m_vDcyTr[i];
+          if(m_optIdxAndMidxOfDcyBrInDcyTr==true) getVIMDcyBr(dcyTr,vIMDcyBr);
           nVldDcyBr=0;
           fout<<"% \\rn = "<<i+1<<endl;
           isSigDcyTr=false;
@@ -183,43 +184,18 @@ void topoana::writeRsltIntoTexFl()
               dcyBr.clear();
               dcyBr=dcyTr[j];
               list<int>::iterator liit=dcyBr.begin();
-              // Since a lot of pi0s are produced and almost all of them decay to gammma pairs, to save paper and for convenience of readers, all branches of pi0 to gamma pairs are not outputted into the tex file, and hence not printed in the pdf file. The following six statements are commmented out since the decay of pi0 to gamma gamma has been ignored by default when inputting the raw topology data.
-              // list<int>::iterator liit1=dcyBr.begin();
-              // liit1++;
-              // list<int>::iterator liit2=dcyBr.begin();
-              // liit2++;
-              // liit2++;
-              // if(((*liit)==111)&&(dcyBr.size()==3)&&((*liit1)==22)&&((*liit2)==22)) continue;
               nVldDcyBr++;
               writePnmFromPid(fout,"TexPnm",(*liit));
-              // The condition "j==0&&((*liit)==-11)" is set for the initial state particle pair e+e-;the condition "(*liit)==1, 2, 3, 4, 5 or 6" is set for the intermediate state quark pair ddbar, uubar, ssbar, ccbar, bbbar or ttbar;
-              if((j==0&&((*liit)==-11))||(*liit)==1||(*liit)==2||(*liit)==3||(*liit)==4||(*liit)==5||(*liit)==6)
+              // The condition "j==0&&((*liit)==m_pidOfISt2)" is set for the initial state particle pair e+e-;the condition "(*liit)==1, 2, 3, 4, 5 or 6" is set for the intermediate state quark pair ddbar, uubar, ssbar, ccbar, bbbar or ttbar;
+              if((j==0&&((*liit)==m_pidOfISt2))||(*liit)==1||(*liit)==2||(*liit)==3||(*liit)==4||(*liit)==5||(*liit)==6)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
                 }
               fout<<"\\rightarrow ";
               for(liit++;liit!=dcyBr.end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
-              // The following bool variable is used to judge whether the current branch is the last one outputed or not.
-              bool lastOneOrAllPi0sToGamPairsBehind=true;
-              list<int> dcyBrTmp;
-              for(unsigned int k=j+1;k<dcyTr.size();k++)
-                {
-                  dcyBrTmp.clear();
-                  dcyBrTmp=dcyTr[k];
-                  list<int>::iterator liitTmp=dcyBrTmp.begin();
-                  list<int>::iterator liitTmp1=dcyBrTmp.begin();
-                  liitTmp1++;
-                  list<int>::iterator liitTmp2=dcyBrTmp.begin();
-                  liitTmp2++;
-                  liitTmp2++;
-                  if(((*liitTmp)!=111)||(dcyBrTmp.size()!=3)||((*liitTmp1)!=22)||((*liitTmp2)!=22))
-                    {
-                      lastOneOrAllPi0sToGamPairsBehind=false;
-                      break;
-                    }
-                }
-              if(!lastOneOrAllPi0sToGamPairsBehind)
+              if(m_optIdxAndMidxOfDcyBrInDcyTr==true) fout<<"\\, {\\footnotesize ["<<j<<","<<vIMDcyBr[j]<<"]}"<<" ";
+              if((j+1)!=dcyTr.size())
                 {
                   fout<<","<<endl;
                   if(nVldDcyBr%nBrInALine==0) fout<<"$ \\\\ $"<<endl;
@@ -258,7 +234,7 @@ void topoana::writeRsltIntoTexFl()
             }
           list<int>::iterator liit=dcyIFSts.begin();
           if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",(*liit));
@@ -320,15 +296,15 @@ void topoana::writeRsltIntoTexFl()
                   if(m_centDcyObjs==false&&nDcyTrsToBePrtd>1) fout<<"l";
                   else fout<<"c";
                   fout<<"]{ $ "<<endl;
-                  if(m_initEpEmSwitch==true)
+                  if(m_iStPsSwitch==true)
                     {
-                      writePnmFromPid(fout,"TexPnm",-11);
-                      writePnmFromPid(fout,"TexPnm",11);
+                      writePnmFromPid(fout,"TexPnm",m_pidOfISt2);
+                      writePnmFromPid(fout,"TexPnm",m_pidOfISt1);
                       fout<<"\\rightarrow \\rm{others \\  ("<<m_vDcyTr.size()-nDcyTrsToBePrtd<<" \\  in \\  total)}";
                       if(m_dcyIFStsUnderDcyTr==false) fout<<endl<<"$ } & $"<<endl;
                       else fout<<endl<<"$ \\\\ ($"<<endl;
-                      if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",-11);
-                      if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",11);
+                      if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",m_pidOfISt2);
+                      if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",m_pidOfISt1);
                     }
                   else
                     {
@@ -343,7 +319,7 @@ void topoana::writeRsltIntoTexFl()
                               if((*liit)!=pid) isASameInitPInAllOtherDcyTrs=false;
                             }
                         }
-                      if(isASameInitPInAllOtherDcyTrs==true&&(pid!=-11))
+                      if(isASameInitPInAllOtherDcyTrs==true&&(pid!=m_pidOfISt2))
                         {
                           writePnmFromPid(fout,"TexPnm",pid);
                           fout<<"\\rightarrow \\rm{others \\  ("<<m_vDcyTr.size()-nDcyTrsToBePrtd<<" \\  in \\  total)}";
@@ -353,13 +329,13 @@ void topoana::writeRsltIntoTexFl()
                         }
                       else
                         {
-                          writePnmFromPid(fout,"TexPnm",-11);
-                          writePnmFromPid(fout,"TexPnm",11);
+                          writePnmFromPid(fout,"TexPnm",m_pidOfISt2);
+                          writePnmFromPid(fout,"TexPnm",m_pidOfISt1);
                           fout<<"\\rightarrow \\rm{others \\  ("<<m_vDcyTr.size()-nDcyTrsToBePrtd<<" \\  in \\  total)}";
                           if(m_dcyIFStsUnderDcyTr==false) fout<<endl<<"$ } & $"<<endl;
                           else fout<<endl<<"$ \\\\ ($"<<endl;
-                          if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",-11);
-                          if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",11);
+                          if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",m_pidOfISt2);
+                          if(m_dcyIFStsUnderDcyTr==true) writePnmFromPid(fout,"TexPnm",m_pidOfISt1);
                         }
                     }
                   if(m_dcyIFStsUnderDcyTr==true) fout<<"\\dashrightarrow ";
@@ -446,7 +422,7 @@ void topoana::writeRsltIntoTexFl()
           dcyIFSts=m_vDcyIFSts[i];
           list<int>::iterator liit=dcyIFSts.begin();
           writePnmFromPid(fout,"TexPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(fout,"TexPnm",(*liit));
@@ -494,7 +470,7 @@ void topoana::writeRsltIntoTexFl()
                   fout<<"rest & $ ";
                   list<int>::iterator liit=dcyIFSts.begin();
                   writePnmFromPid(fout,"TexPnm",(*liit));
-                  if((*liit)==-11)
+                  if((*liit)==m_pidOfISt2)
                     {
                       liit++;
                       writePnmFromPid(fout,"TexPnm",(*liit));
@@ -628,6 +604,7 @@ void topoana::writeRsltIntoTexFl()
           vector< list<int> > cascDcyBrP;
           // vector<int> vCascDcyBrIdxOfHead;
           list<int> dcyBrP;
+          vector<int> vIMDcyBr;
           unsigned long nCCase=0;
           unsigned long nCascDcyBrPToBePrtd=m_vVCascDcyBrP[i].size()<m_vNCascDcyBrToBePrtdMax[i]?m_vVCascDcyBrP[i].size():m_vNCascDcyBrToBePrtdMax[i];
           nLineMean=0;
@@ -675,6 +652,7 @@ void topoana::writeRsltIntoTexFl()
                 }
               cascDcyBrP.clear();
               cascDcyBrP=m_vVCascDcyBrP[i][j];
+              if(m_vOptIdxAndMidxOfDcyBrInCascDcyBrP[i]==true) getVIMDcyBr(cascDcyBrP,vIMDcyBr);
               nVldDcyBr=0;
               fout<<"% \\rn = "<<j+1<<endl;
               fout<<"\\rn & \\makecell[";
@@ -690,6 +668,7 @@ void topoana::writeRsltIntoTexFl()
                   writePnmFromPid(fout,"TexPnm",(*liit));
                   fout<<"\\rightarrow ";
                   for(liit++;liit!=dcyBrP.end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
+                  if(m_vOptIdxAndMidxOfDcyBrInCascDcyBrP[i]==true) fout<<"\\, {\\footnotesize ["<<k<<","<<vIMDcyBr[k]<<"]}"<<" ";
                   if(k<(cascDcyBrP.size()-1))
                     {
                       fout<<","<<endl;
@@ -911,7 +890,7 @@ void topoana::writeRsltIntoTexFl()
               prodBrP=m_vVProdBrP[i][j];
               list<int>::iterator liit=prodBrP.begin();
               writePnmFromPid(fout,"TexPnm",(*liit));
-              if((*liit)==-11)
+              if((*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
@@ -919,9 +898,9 @@ void topoana::writeRsltIntoTexFl()
               fout<<"\\rightarrow ";
               for(liit++;liit!=prodBrP.end();liit++)
                 {
-                  if((*liit)==m_vPid_compProdBrP[i]) fout<<"{\\color{blue}{ ";
+                  if(((*liit)==m_vPid_compProdBrP[i])||((m_ccSwitch==true)&&((*liit)==m_vPid_ccCompProdBrP[i]))) fout<<"{\\color{blue}{ ";
                   writePnmFromPid(fout,"TexPnm",(*liit));
-                  if((*liit)==m_vPid_compProdBrP[i]) fout<<"}} ";
+                  if(((*liit)==m_vPid_compProdBrP[i])||((m_ccSwitch==true)&&((*liit)==m_vPid_ccCompProdBrP[i]))) fout<<"}} ";
                 }
               fout<<"$ & \\topoTags{"<<m_vVIProdBrP[i][j]<<" & }"<<m_vVNProdBrP[i][j]<<" & ";
               if(m_ccSwitch==true)
@@ -1089,28 +1068,49 @@ void topoana::writeRsltIntoTexFl()
                   fout<<"\\tablecaption{Exclusive components of $ ";
                   list<int>::iterator liit=m_vCompIncDcyBr[i].begin();
                   writePnmFromPid(fout,"TexPnm",(*liit));
-                  if((*liit)==-11)
+                  if((*liit)==m_pidOfISt2)
                     {
                       liit++;
                       writePnmFromPid(fout,"TexPnm",(*liit));
                     }
-                  fout<<"\\rightarrow ";
+                  if(m_vOption_compIncDcyBr[i].find("-IRA")==string::npos) fout<<"\\rightarrow ";
+                  else fout<<"\\dashrightarrow ";
                   for(liit++;liit!=m_vCompIncDcyBr[i].end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
-                  fout<<"+ anything ";
+                  fout<<"+ ";
+                  if(m_vOption_compIncDcyBr[i]=="") fout<<"anything ";
+                  else
+                    {
+                      fout<<"n ";
+                      if(m_vOption_compIncDcyBr[i]=="Is"||m_vOption_compIncDcyBr[i]=="Is-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfSISRGam);
+                      else if(m_vOption_compIncDcyBr[i]=="Ig"||m_vOption_compIncDcyBr[i]=="Ig-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfGISRGam);
+                      else if(m_vOption_compIncDcyBr[i]=="Fs"||m_vOption_compIncDcyBr[i]=="Fs-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfSFSRGam);
+                      else if(m_vOption_compIncDcyBr[i]=="Fg"||m_vOption_compIncDcyBr[i]=="Fg-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfGFSRGam);
+                    }
                   fout<<"$.}"<<endl;
                   fout<<"\\tableheader";
                   if(m_cmpltHVLines==false) fout<<"P";
                   fout<<"{rowNo & \\thead{exclusive component of $ ";
                   liit=m_vCompIncDcyBr[i].begin();
                   writePnmFromPid(fout,"TexPnm",(*liit));
-                  if((*liit)==-11)
+                  if((*liit)==m_pidOfISt2)
                     {
                       liit++;
                       writePnmFromPid(fout,"TexPnm",(*liit));
                     }
-                  fout<<"\\rightarrow ";
+                  if(m_vOption_compIncDcyBr[i].find("-IRA")==string::npos) fout<<"\\rightarrow ";
+                  else fout<<"\\dashrightarrow ";
                   for(liit++;liit!=m_vCompIncDcyBr[i].end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
-                  fout<<"+ anything $} & \\topoTags{iDcyBrIncDcyBr & }nCase & ";
+                  fout<<"+ ";
+                  if(m_vOption_compIncDcyBr[i]=="") fout<<"anything ";
+                  else
+                    {
+                      fout<<"n ";
+                      if(m_vOption_compIncDcyBr[i]=="Is"||m_vOption_compIncDcyBr[i]=="Is-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfSISRGam);
+                      else if(m_vOption_compIncDcyBr[i]=="Ig"||m_vOption_compIncDcyBr[i]=="Ig-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfGISRGam);
+                      else if(m_vOption_compIncDcyBr[i]=="Fs"||m_vOption_compIncDcyBr[i]=="Fs-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfSFSRGam);
+                      else if(m_vOption_compIncDcyBr[i]=="Fg"||m_vOption_compIncDcyBr[i]=="Fg-IRA") writePnmFromPid(fout,"TexPnm",m_pidOfGFSRGam);
+                    }
+                  fout<<"$} & \\topoTags{iDcyBrIncDcyBr & }nCase & ";
                   if(m_ccSwitch==true) fout<<"nCcCase & nAllCase & ";
                   fout<<"nCCase \\\\}"<<endl<<endl;
                 }
@@ -1120,12 +1120,13 @@ void topoana::writeRsltIntoTexFl()
               dcyBrIncDcyBr=m_vVDcyBrIncDcyBr[i][j];
               list<int>::iterator liit=dcyBrIncDcyBr.begin();
               writePnmFromPid(fout,"TexPnm",(*liit));
-              if((*liit)==-11)
+              if((*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
                 }
-              fout<<"\\rightarrow ";
+              if(m_vOption_compIncDcyBr[i].find("-IRA")==string::npos) fout<<"\\rightarrow ";
+              else fout<<"\\dashrightarrow ";
               for(liit++;liit!=dcyBrIncDcyBr.end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
               fout<<"$ & \\topoTags{"<<m_vVIDcyBrIncDcyBr[i][j]<<" & }"<<m_vVNDcyBrIncDcyBr[i][j]<<" & ";
               if(m_ccSwitch==true)
@@ -1149,12 +1150,13 @@ void topoana::writeRsltIntoTexFl()
                       fout<<"rest & $ ";
                       list<int>::iterator liit=m_vCompIncDcyBr[i].begin();
                       writePnmFromPid(fout,"TexPnm",(*liit));
-                      if((*liit)==-11)
+                      if((*liit)==m_pidOfISt2)
                         {
                           liit++;
                           writePnmFromPid(fout,"TexPnm",(*liit));
                         }
-                      fout<<"\\rightarrow ";
+                      if(m_vOption_compIncDcyBr[i].find("-IRA")==string::npos) fout<<"\\rightarrow ";
+                      else fout<<"\\dashrightarrow ";
                       for(liit++;liit!=m_vCompIncDcyBr[i].end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
                       fout<<"+ \\rm{others \\  ("<<m_vVDcyBrIncDcyBr[i].size()-nDcyBrIncDcyBrToBePrtd<<" \\  in \\  total)} $ & \\topoTags{--- & }";
                       unsigned long nCCaseOfRest=0;
@@ -1224,7 +1226,7 @@ void topoana::writeRsltIntoTexFl()
                   fout<<"\\tablecaption{Exclusive components of $ ";
                   list<int>::iterator liit=m_vCompIRADcyBr[i].begin();
                   writePnmFromPid(fout,"TexPnm",(*liit));
-                  if((*liit)==-11)
+                  if((*liit)==m_pidOfISt2)
                     {
                       liit++;
                       writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1237,7 +1239,7 @@ void topoana::writeRsltIntoTexFl()
                   fout<<"{rowNo & \\thead{exclusive component of $ ";
                   liit=m_vCompIRADcyBr[i].begin();
                   writePnmFromPid(fout,"TexPnm",(*liit));
-                  if((*liit)==-11)
+                  if((*liit)==m_pidOfISt2)
                     {
                       liit++;
                       writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1263,7 +1265,7 @@ void topoana::writeRsltIntoTexFl()
                   list<int>::iterator liit=subdcyBrIRADcyBr.begin();
                   nVldDcyBr++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
-                  if((k==0)&&((*liit)==-11))
+                  if((k==0)&&((*liit)==m_pidOfISt2))
                     {
                       liit++;
                       writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1301,7 +1303,7 @@ void topoana::writeRsltIntoTexFl()
                       fout<<"rest & $ ";
                       list<int>::iterator liit=m_vCompIRADcyBr[i].begin();
                       writePnmFromPid(fout,"TexPnm",(*liit));
-                      if((*liit)==-11)
+                      if((*liit)==m_pidOfISt2)
                         {
                           liit++;
                           writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1347,6 +1349,7 @@ void topoana::writeRsltIntoTexFl()
       vector< list<int> > sigDcyTr;
       list<int> sigDcyBr;
       list<int> sigDcyIFSts_tr;
+      vector<int> vIMSigDcyBr;
       nCEtr=0;
       nLineMean=0;
       for(unsigned long i=0;i<m_vSigDcyTr.size();i++) nLineMean=nLineMean+m_vSigDcyTr[i].size();
@@ -1415,6 +1418,7 @@ void topoana::writeRsltIntoTexFl()
             }
           sigDcyTr.clear();
           sigDcyTr=m_vSigDcyTr[i];
+          if(m_optIdxAndMidxOfSigDcyBrInSigDcyTr==true) getVIMDcyBr(sigDcyTr,vIMSigDcyBr);
           nVldDcyBr=0;
           fout<<"% \\rn = "<<i+1<<endl;
           fout<<"\\rn & \\makecell[";
@@ -1426,43 +1430,18 @@ void topoana::writeRsltIntoTexFl()
               sigDcyBr.clear();
               sigDcyBr=sigDcyTr[j];              
               list<int>::iterator liit=sigDcyBr.begin();
-              // Since a lot of pi0s are produced and almost all of them decay to gammma pairs, to save paper and for convenience of readers, all branches of pi0 to gamma pairs are not outputted into the tex file, and hence not printed in the pdf file. The following six statements are commmented out since the decay of pi0 to gamma gamma has been ignored by default when inputting the raw topology data.
-              // list<int>::iterator liit1=sigDcyBr.begin();
-              // liit1++;
-              // list<int>::iterator liit2=sigDcyBr.begin();
-              // liit2++;
-              // liit2++;
-              // if(((*liit)==111)&&(sigDcyBr.size()==3)&&((*liit1)==22)&&((*liit2)==22)) continue;
               nVldDcyBr++;
               writePnmFromPid(fout,"TexPnm",(*liit));
-              // The condition "j==0&&((*liit)==-11)" is set for the initial state particle pair e+e-;the condition "(*liit)==1, 2, 3, 4, 5 or 6" is set for the intermediate state quark pair ddbar, uubar, ssbar, ccbar, bbbar or ttbar;
-              if((j==0&&((*liit)==-11))||(*liit)==1||(*liit)==2||(*liit)==3||(*liit)==4||(*liit)==5||(*liit)==6)
+              // The condition "j==0&&((*liit)==m_pidOfISt2)" is set for the initial state particle pair e+e-;the condition "(*liit)==1, 2, 3, 4, 5 or 6" is set for the intermediate state quark pair ddbar, uubar, ssbar, ccbar, bbbar or ttbar;
+              if((j==0&&((*liit)==m_pidOfISt2))||(*liit)==1||(*liit)==2||(*liit)==3||(*liit)==4||(*liit)==5||(*liit)==6)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
                 }
               fout<<"\\rightarrow ";
               for(liit++;liit!=sigDcyBr.end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
-              // The following bool variable is used to judge whether the current branch is the last one outputed or not.
-              bool lastOneOrAllPi0sToGamPairsBehind=true;
-              list<int> sigDcyBrTmp;
-              for(unsigned int k=j+1;k<sigDcyTr.size();k++)
-                {
-                  sigDcyBrTmp.clear();
-                  sigDcyBrTmp=sigDcyTr[k];
-                  list<int>::iterator liitTmp=sigDcyBrTmp.begin();
-                  list<int>::iterator liitTmp1=sigDcyBrTmp.begin();
-                  liitTmp1++;
-                  list<int>::iterator liitTmp2=sigDcyBrTmp.begin();
-                  liitTmp2++;
-                  liitTmp2++;
-                  if(((*liitTmp)!=111)||(sigDcyBrTmp.size()!=3)||((*liitTmp1)!=22)||((*liitTmp2)!=22))
-                    {
-                      lastOneOrAllPi0sToGamPairsBehind=false;
-                      break;
-                    }
-                }
-              if(!lastOneOrAllPi0sToGamPairsBehind)
+              if(m_optIdxAndMidxOfSigDcyBrInSigDcyTr==true) fout<<"\\, {\\footnotesize ["<<j<<","<<vIMSigDcyBr[j]<<"]}"<<" ";
+              if((j+1)!=sigDcyTr.size())
                 {
                   fout<<","<<endl;
                   if(nVldDcyBr%nBrInALine==0) fout<<"$ \\\\ $"<<endl;
@@ -1486,7 +1465,7 @@ void topoana::writeRsltIntoTexFl()
             }
           list<int>::iterator liit=sigDcyIFSts_tr.begin();
           if(m_sigDcyIFStsUnderSigDcyTr==true) writePnmFromPid(fout,"TexPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               if(m_sigDcyIFStsUnderSigDcyTr==true) writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1596,7 +1575,7 @@ void topoana::writeRsltIntoTexFl()
               sigDcyIFSts_tr=m_vSigDcyIFSts_tr[i];
               list<int>::iterator liit=sigDcyIFSts_tr.begin();
               writePnmFromPid(fout,"TexPnm",(*liit));
-              if((*liit)==-11)
+              if((*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1686,7 +1665,7 @@ void topoana::writeRsltIntoTexFl()
           sigDcyIFSts=m_vSigDcyIFSts[i];
           list<int>::iterator liit=sigDcyIFSts.begin();
           writePnmFromPid(fout,"TexPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1816,7 +1795,7 @@ void topoana::writeRsltIntoTexFl()
           sigDcyBr=m_vSigDcyBr[i];
           list<int>::iterator liit=sigDcyBr.begin();
           writePnmFromPid(fout,"TexPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1883,7 +1862,7 @@ void topoana::writeRsltIntoTexFl()
           sigIncDcyBr=m_vSigIncDcyBr[i];
           list<int>::iterator liit=sigIncDcyBr.begin();
           writePnmFromPid(fout,"TexPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(fout,"TexPnm",(*liit));
@@ -1919,6 +1898,7 @@ void topoana::writeRsltIntoTexFl()
       vector< list<int> > sigCascDcyBr;
       vector<int> vSigCascDcyBrIdxOfHead;
       list<int> sigDcyBr;
+      vector<int> vIMSigDcyBr;
       unsigned long nCCase=0;
       nLineMean=0;
       for(unsigned long i=0;i<m_vSigCascDcyBr.size();i++) nLineMean=nLineMean+m_vSigCascDcyBr[i].size();
@@ -1954,6 +1934,7 @@ void topoana::writeRsltIntoTexFl()
           sigCascDcyBr.clear();
           sigCascDcyBr=m_vSigCascDcyBr[i];
           vSigCascDcyBrIdxOfHead=m_vVSigCascDcyBrIdxOfHead[i];
+          if(m_optIdxAndMidxOfSigDcyBrInSigCascDcyBr==true) getVIMDcyBr(sigCascDcyBr,vIMSigDcyBr);
           nVldDcyBr=0;
           fout<<"% \\rn = "<<i+1<<endl;
           fout<<"\\rn & \\makecell[";
@@ -1968,13 +1949,14 @@ void topoana::writeRsltIntoTexFl()
               nVldDcyBr++;
               writePnmFromPid(fout,"TexPnm",(*liit));
               // if(j==0&&vSigCascDcyBrIdxOfHead[0]==-1)
-              if(j==0&&(*liit)==-11)
+              if(j==0&&(*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
                 }
               fout<<"\\rightarrow ";
               for(liit++;liit!=sigDcyBr.end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
+              if(m_optIdxAndMidxOfSigDcyBrInSigCascDcyBr==true) fout<<"\\, {\\footnotesize ["<<j<<","<<vIMSigDcyBr[j]<<"]}"<<" ";
               if(j<(sigCascDcyBr.size()-1))
                 {
                   fout<<","<<endl;
@@ -2021,6 +2003,7 @@ void topoana::writeRsltIntoTexFl()
       vector< list<int> > sigIncCascDcyBr;
       vector<int> vSigIncCascDcyBrIdxOfHead;
       list<int> sigDcyBr;
+      vector<int> vIMSigDcyBr;
       unsigned long nCCase=0;
       nLineMean=0;
       for(unsigned long i=0;i<m_vSigIncCascDcyBr.size();i++) nLineMean=nLineMean+m_vSigIncCascDcyBr[i].size();
@@ -2056,6 +2039,7 @@ void topoana::writeRsltIntoTexFl()
           sigIncCascDcyBr.clear();
           sigIncCascDcyBr=m_vSigIncCascDcyBr[i];
           vSigIncCascDcyBrIdxOfHead=m_vVSigIncCascDcyBrIdxOfHead[i];
+          if(m_optIdxAndMidxOfSigDcyBrInSigIncCascDcyBr==true) getVIMDcyBr(sigIncCascDcyBr,vIMSigDcyBr);
           nVldDcyBr=0;
           fout<<"% \\rn = "<<i+1<<endl;
           fout<<"\\rn & \\makecell[";
@@ -2070,7 +2054,7 @@ void topoana::writeRsltIntoTexFl()
               nVldDcyBr++;
               writePnmFromPid(fout,"TexPnm",(*liit));
               // if(j==0&&vSigIncCascDcyBrIdxOfHead[0]==-1)
-              if(j==0&&(*liit)==-11)
+              if(j==0&&(*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
@@ -2078,6 +2062,7 @@ void topoana::writeRsltIntoTexFl()
               fout<<"\\rightarrow ";
               for(liit++;liit!=sigDcyBr.end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
               if(m_vVIIncSigIncCascDcyBr[i][j]==1) writePnmFromPid(fout,"TexPnm",m_pidOfAnything);
+              if(m_optIdxAndMidxOfSigDcyBrInSigIncCascDcyBr==true) fout<<"\\, {\\footnotesize ["<<j<<","<<vIMSigDcyBr[j]<<"]}"<<" ";
               if(j<(sigIncCascDcyBr.size()-1))
                 {
                   fout<<","<<endl;
@@ -2155,7 +2140,7 @@ void topoana::writeRsltIntoTexFl()
           sigIRADcyBr=m_vSigIRADcyBr[i];
           list<int>::iterator liit=sigIRADcyBr.begin();
           writePnmFromPid(fout,"TexPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(fout,"TexPnm",(*liit));
@@ -2191,6 +2176,7 @@ void topoana::writeRsltIntoTexFl()
       vector< list<int> > sigIncOrIRACascDcyBr;
       vector<int> vSigIncOrIRACascDcyBrIdxOfHead;
       list<int> sigDcyBr;
+      vector<int> vIMSigDcyBr;
       unsigned long nCCase=0;
       nLineMean=0;
       for(unsigned long i=0;i<m_vSigIncOrIRACascDcyBr.size();i++) nLineMean=nLineMean+m_vSigIncOrIRACascDcyBr[i].size();
@@ -2226,6 +2212,7 @@ void topoana::writeRsltIntoTexFl()
           sigIncOrIRACascDcyBr.clear();
           sigIncOrIRACascDcyBr=m_vSigIncOrIRACascDcyBr[i];
           vSigIncOrIRACascDcyBrIdxOfHead=m_vVSigIncOrIRACascDcyBrIdxOfHead[i];
+          if(m_optIdxAndMidxOfSigDcyBrInSigIncOrIRACascDcyBr==true) getVIMDcyBr(sigIncOrIRACascDcyBr,vIMSigDcyBr);
           nVldDcyBr=0;
           fout<<"% \\rn = "<<i+1<<endl;
           fout<<"\\rn & \\makecell[";
@@ -2240,7 +2227,7 @@ void topoana::writeRsltIntoTexFl()
               nVldDcyBr++;
               writePnmFromPid(fout,"TexPnm",(*liit));
               // if(j==0&&vSigIncOrIRACascDcyBrIdxOfHead[0]==-1)
-              if(j==0&&(*liit)==-11)
+              if(j==0&&(*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(fout,"TexPnm",(*liit));
@@ -2249,6 +2236,7 @@ void topoana::writeRsltIntoTexFl()
               fout<<"\\rightarrow ";
               for(liit++;liit!=sigDcyBr.end();liit++) writePnmFromPid(fout,"TexPnm",(*liit));
               if(m_vVIIncSigIncOrIRACascDcyBr[i][j]==1) writePnmFromPid(fout,"TexPnm",m_pidOfAnything);
+              if(m_optIdxAndMidxOfSigDcyBrInSigIncOrIRACascDcyBr==true) fout<<"\\, {\\footnotesize ["<<j<<","<<vIMSigDcyBr[j]<<"]}"<<" ";
               // The following bool variable is used to judge whether the current branch is the last one outputed or not.
               if(j<(sigIncOrIRACascDcyBr.size()-1))
                 {

@@ -72,7 +72,7 @@ void topoana::checkInput()
                   if(pos!=string::npos)
                     {
                       nmOfOptRootFl.replace(pos,5,"_ta.root");
-                      if(eaccess(nmOfOptRootFl.c_str(),0)==0)
+                      if(access(nmOfOptRootFl.c_str(),0)==0)
                         {
                           cerr<<"Error: The output root file \""<<nmOfOptRootFl<<"\" already exists!"<<endl;
                           cerr<<"Infor: The program does not overwrite it by default."<<endl;
@@ -113,27 +113,41 @@ void topoana::checkInput()
       cout<<"TTree name: "<<m_ttrNm<<endl<<endl;
     }
 
+  if(m_othTtrNms.size()==0)
+    {
+      if(m_vbsLevStdOut==true) cerr<<"No other TTree names are provided for the purpose of duplication."<<endl;
+    }
+  else
+    {
+      cout<<"Names of other TTrees to be copied to the output root files:"<<endl<<endl;
+      for(unsigned int i=0;i<m_othTtrNms.size();i++)
+        {
+          cout<<"  "<<m_othTtrNms[i]<<endl;
+        }
+      cout<<endl;
+    }
+
   if(m_strgTpOfRawIptTopoDat=="AOI")
     {
-      if(m_vbsLevStdOut==true) cout<<"Storage type of input raw topology data: Array of integers (default)."<<endl<<endl;
+      if(m_vbsLevStdOut==true) cout<<"Storage type of input raw topology truth information: Array of integers (default)."<<endl<<endl;
     }
   else if(m_strgTpOfRawIptTopoDat=="VOI")
     {
-      cout<<"Storage type of input raw topology data: Vector of integers."<<endl<<endl;
+      cout<<"Storage type of input raw topology truth information: Vector of integers."<<endl<<endl;
     }
   else if(m_strgTpOfRawIptTopoDat=="MSI")
     {
-      cout<<"Storage type of input raw topology data: multiple scalar integers."<<endl<<endl;
+      cout<<"Storage type of input raw topology truth information: multiple scalar integers."<<endl<<endl;
     }
   else if(m_strgTpOfRawIptTopoDat=="MSD")
     {
-      cout<<"Storage type of input raw topology data: multiple scalar double-precision numbers."<<endl<<endl;
+      cout<<"Storage type of input raw topology truth information: multiple scalar double-precision numbers."<<endl<<endl;
     }
 
   if(m_tbrNmOfNps!="nMCGen")
     {
       if(m_strgTpOfRawIptTopoDat=="AOI"||m_strgTpOfRawIptTopoDat=="MSI"||m_strgTpOfRawIptTopoDat=="MSD") cout<<"TBranch name of the number of particles: "<<m_tbrNmOfNps<<endl<<endl;
-      else cout<<"The item with the prompt \"% TBranch name of the number of particles (Default: nMCGen)\" is not used since the storage type of the input raw topology data is \"vector of integers\"."<<endl<<endl; 
+      else cout<<"The item with the prompt \"% TBranch name of the number of particles (Default: nMCGen)\" is not used since the storage type of the input raw topology truth information is \"vector of integers\"."<<endl<<endl; 
     }
   else
     {
@@ -141,7 +155,7 @@ void topoana::checkInput()
         {
           if(m_vbsLevStdOut==true) cout<<"TBranch name of the number of particles: "<<m_tbrNmOfNps<<" (default)"<<endl<<endl;
         }
-      else cout<<"The item with the prompt \"% TBranch name of the number of particles (Default: nMCGen)\" is not used since the storage type of the input raw topology data is \"vector of integers\"."<<endl<<endl;
+      else cout<<"The item with the prompt \"% TBranch name of the number of particles (Default: nMCGen)\" is not used since the storage type of the input raw topology truth information is \"vector of integers\"."<<endl<<endl;
     }
 
   if(m_tbrNmOfPid!="MCGenPDG")
@@ -177,6 +191,30 @@ void topoana::checkInput()
   else
     {
       if(m_vbsLevStdOut==true) cout<<"Over counting will not be avoided for candidate based analysis (default)."<<endl<<endl;
+    }
+
+  if(m_tbrNmOfRidx!="MCGenRawIndex")
+    {
+      cout<<"TBranch name of the raw indices of particles: "<<m_tbrNmOfRidx<<endl<<endl;
+    }
+  else
+    {
+      if(m_vbsLevStdOut==true) cout<<"TBranch name of the raw indices of particles: "<<m_tbrNmOfRidx<<" (default)"<<endl<<endl;
+    }
+
+  if(m_useRidx==false&&m_vPid_compDcyBrP.size()>0) m_useRidx=useRidx(m_vTypeOfTagRec_compDcyBrP);
+  if(m_useRidx==false&&m_vPid_compCascDcyBrP.size()>0) m_useRidx=useRidx(m_vTypeOfTagRec_compCascDcyBrP);
+  if(m_useRidx==false&&m_vPid_compDcyFStP.size()>0) m_useRidx=useRidx(m_vTypeOfTagRec_compDcyFStP);
+  if(m_useRidx==false&&m_vPid_compProdBrP.size()>0) m_useRidx=useRidx(m_vTypeOfTagRec_compProdBrP);
+  if(m_useRidx==false&&m_vPid_compMP.size()>0) m_useRidx=useRidx(m_vTypeOfTagRec_compMP);
+
+  if(m_useRidx==true)
+    {
+      cout<<"The raw indices of particles stored in the TBranch: "<<m_tbrNmOfRidx<<" will be used."<<endl<<endl;
+    }
+  else
+    {
+      if(m_vbsLevStdOut==true) cout<<"The raw indices of particles stored in the TBranch: "<<m_tbrNmOfRidx<<" will not be used (default)."<<endl<<endl;
     }
 
   TChain * chn=new TChain(m_ttrNm.c_str());
@@ -230,13 +268,22 @@ void topoana::checkInput()
                       cerr<<"Error: The tree \""<<m_ttrNm<<"\" in the input root file \""<<chnElmt->GetTitle()<<"\" does not contain a branch named \""<<m_tbrNmOfMidx<<"\"!"<<endl<<endl;
                       allIptsAreOK=false;
                     }
+                  if(m_useRidx==true)
+                    {
+                      TBranch * br3=tr->FindBranch(m_tbrNmOfRidx.c_str());
+                      if(!br3)
+                        {
+                          cerr<<"Error: The tree \""<<m_ttrNm<<"\" in the input root file \""<<chnElmt->GetTitle()<<"\" does not contain a branch named \""<<m_tbrNmOfRidx<<"\"!"<<endl<<endl;
+                          allIptsAreOK=false;
+                        }
+                    }
                 }
               else
                 {
                   ostringstream oss;
-                  int i=0;
-                  string strI,m_tbrNmOfPid_i,m_tbrNmOfMidx_i;
-                  TBranch * br1, * br2;
+                  unsigned int i=0;
+                  string strI,m_tbrNmOfPid_i,m_tbrNmOfMidx_i,m_tbrNmOfRidx_i;
+                  TBranch * br1, * br2, * br3;
                   while(1)
                     {
                       oss.str("");
@@ -244,29 +291,53 @@ void topoana::checkInput()
                       strI=oss.str();
                       m_tbrNmOfPid_i=m_tbrNmOfPid+"_"+strI;
                       m_tbrNmOfMidx_i=m_tbrNmOfMidx+"_"+strI;
+                      if(m_strgTpOfRawIptTopoDat=="MSI"&&m_useRidx==true) m_tbrNmOfRidx_i=m_tbrNmOfRidx+"_"+strI;
                       br1=tr->FindBranch(m_tbrNmOfPid_i.c_str());
                       br2=tr->FindBranch(m_tbrNmOfMidx_i.c_str());
+                      if(m_strgTpOfRawIptTopoDat=="MSI"&&m_useRidx==true) br3=tr->FindBranch(m_tbrNmOfRidx_i.c_str());
                       if((!br1)||(!br2)) break;
+                      if(m_strgTpOfRawIptTopoDat=="MSI"&&m_useRidx==true&&(!br3)) break;
                       i++;
                     }
                   if(i==0)
                     {
-                      cerr<<"Error: The tree \""<<m_ttrNm<<"\" in the input root file \""<<chnElmt->GetTitle()<<"\" does not contain a branch named \""<<m_tbrNmOfPid<<"_i\", or \""<<m_tbrNmOfMidx<<"_i\"!"<<endl<<endl;
+                      cerr<<"Error: The tree \""<<m_ttrNm<<"\" in the input root file \""<<chnElmt->GetTitle()<<"\" does not contain a branch named \""<<m_tbrNmOfPid<<"_i\", ";
+                      if(m_strgTpOfRawIptTopoDat=="MSI"&&m_useRidx==true) cerr<<"\""<<m_tbrNmOfMidx<<"_i\", or \""<<m_tbrNmOfRidx;
+                      else cerr<<"or \""<<m_tbrNmOfMidx;
+                      cerr<<"_i\"!"<<endl<<endl;
                       allIptsAreOK=false;                      
                     }
                   else
                     {
-                      cout<<"The tree \""<<m_ttrNm<<"\" in the input root file \""<<chnElmt->GetTitle()<<"\" contains "<<i<<" branches named \""<<m_tbrNmOfPid<<"_i\" and contains "<<i<<" branches named \""<<m_tbrNmOfMidx<<"_i\"!"<<endl<<endl;
+                      cout<<"The tree \""<<m_ttrNm<<"\" in the input root file \""<<chnElmt->GetTitle()<<"\" contains "<<i<<" branches named \""<<m_tbrNmOfPid<<"_i\"";
+                      if(m_strgTpOfRawIptTopoDat=="MSI"&&m_useRidx==true) cout<<", "<<i<<" branches named \""<<m_tbrNmOfMidx<<"\", and "<<i<<" branches named \""<<m_tbrNmOfRidx;
+                      else cout<<" and "<<i<<" branches named \""<<m_tbrNmOfMidx;
+                      cout<<"_i\"!"<<endl<<endl;
+                      if(i<m_nMinTbrOfPidMidx) m_nMinTbrOfPidMidx=i;
                     }
                 }
               if(m_avoidOverCounting==true)
                 {
-                  TBranch * br3=tr->FindBranch(m_tbrNmOfIcandi.c_str());
-                  if(!br3)
+                  TBranch * br4=tr->FindBranch(m_tbrNmOfIcandi.c_str());
+                  if(!br4)
                     {
                       cerr<<"Error: The tree \""<<m_ttrNm<<"\" in the input root file \""<<chnElmt->GetTitle()<<"\" does not contain a branch named \""<<m_tbrNmOfIcandi<<"\"!"<<endl<<endl;
                       allIptsAreOK=false;
                     }
+                }
+              if(m_vPid_compDcyBrP.size()>0) findBranch(chnElmt->GetTitle(), m_ttrNm, tr, m_vTypeOfTagRec_compDcyBrP, m_vTBrNmOfTagRec_compDcyBrP, m_vTBrNmOfNRec_compDcyBrP, allIptsAreOK, "% Component analysis --- decay branches of particles");
+              if(m_vPid_compCascDcyBrP.size()>0) findBranch(chnElmt->GetTitle(), m_ttrNm, tr, m_vTypeOfTagRec_compCascDcyBrP, m_vTBrNmOfTagRec_compCascDcyBrP, m_vTBrNmOfNRec_compCascDcyBrP, allIptsAreOK, "% Component analysis --- cascade decay branches of particles");
+              if(m_vPid_compDcyFStP.size()>0) findBranch(chnElmt->GetTitle(), m_ttrNm, tr, m_vTypeOfTagRec_compDcyFStP, m_vTBrNmOfTagRec_compDcyFStP, m_vTBrNmOfNRec_compDcyFStP, allIptsAreOK, "% Component analysis --- decay final states of particles");
+              if(m_vPid_compProdBrP.size()>0) findBranch(chnElmt->GetTitle(), m_ttrNm, tr, m_vTypeOfTagRec_compProdBrP, m_vTBrNmOfTagRec_compProdBrP, m_vTBrNmOfNRec_compProdBrP, allIptsAreOK, "% Component analysis --- production branches of particles");
+              if(m_vPid_compMP.size()>0) findBranch(chnElmt->GetTitle(), m_ttrNm, tr, m_vTypeOfTagRec_compMP, m_vTBrNmOfTagRec_compMP, m_vTBrNmOfNRec_compMP, allIptsAreOK, "% Component analysis --- mothers of particles");
+            }
+          for(unsigned int i=0;i<m_othTtrNms.size();i++)
+            {
+              tr=(TTree *) fl->Get(m_othTtrNms[i].c_str());
+              if(!tr)
+                {
+                  cerr<<"Error: The input root file \""<<chnElmt->GetTitle()<<"\" does not contain a tree named \""<<m_othTtrNms[i]<<"\"!"<<endl<<endl;
+                  allIptsAreOK=false;
                 }
             }
           delete fl;
@@ -274,6 +345,16 @@ void topoana::checkInput()
     }
   if(!allIptsAreOK) exit(-1);
   delete chn;
+
+  if(m_fixMidxBESIII==true)
+    {
+      cout<<"The mother indices of particles in BESIII experiment will be fixed."<<endl<<endl;
+    }
+  else
+    {
+      if(m_vbsLevStdOut==true) cout<<"No fix is set for the mother indices of particles in BESIII experiment (default)."<<endl<<endl;
+    }
+
 
   if(m_nEtrMax!=ULONG_MAX)
     {
@@ -290,6 +371,7 @@ void topoana::checkInput()
     }
   else
     {
+      if(m_vCut.size()>1) for(unsigned int i=0;i<m_vCut.size();i++) cout<<"Cut segment in Line "<<i<<": "<<m_vCut[i]<<endl;
       cout<<"Cut to select entries: "<<m_cut<<endl<<endl;
       if(m_cutMethod==true)
         {
@@ -569,11 +651,19 @@ void topoana::checkInput()
         }
       if(m_dcyIFStsUnderDcyTr==true)
         {
-          cout<<"The decay initial-final states in the output pdf files are put under their respective decay trees."<<endl;
+          cout<<"The decay initial-final states in the output pdf file are put under their respective decay trees."<<endl;
         }
       else
         {
-          if(m_vbsLevStdOut==true) cout<<"The decay final states in the output pdf files are put in a column next to that for decay trees (default)."<<endl;
+          if(m_vbsLevStdOut==true) cout<<"The decay final states in the output pdf file are put in a column next to that for decay trees (default)."<<endl;
+        }
+      if(m_optIdxAndMidxOfDcyBrInDcyTr==true)
+        {
+          cout<<"The indices and mother indices of the decay branches in the decay trees are output to the pdf file."<<endl;
+        }
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"The indices and mother indices of the decay branches in the decay trees are not output to the pdf file (default)."<<endl;
         }
       cout<<endl;
       m_vDcyTr.clear(); m_vCcDcyTr.clear();
@@ -636,14 +726,6 @@ void topoana::checkInput()
           // else if(m_pidTxtPnmMap[m_vPid_compDcyBrP[i]].size()<=14) cout<<"\t\t";
           // else if(m_pidTxtPnmMap[m_vPid_compDcyBrP[i]].size()<=22) cout<<"\t";
           cout<<endl;
-          if(m_vNDcyBrToBePrtdMax[i]!=ULONG_MAX)
-            {
-              cout<<"  Maximum number of decay branches to be printed: "<<m_vNDcyBrToBePrtdMax[i]<<endl;
-            }
-          else
-            {
-              if(m_vbsLevStdOut==true) cout<<"  Maximum number of decay branches to be printed: ULONG_MAX (default)"<<endl;
-            }
           if(m_vNm_compDcyBrP[i]!="")
             {
               cout<<"  Alias for the particle is set to be \""<<m_vNm_compDcyBrP[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -653,6 +735,35 @@ void topoana::checkInput()
               sprintf(nm_compDcyBrP, "%d", i);
               if(m_vbsLevStdOut==true) cout<<"  Alias for the particle is set to be \""<<nm_compDcyBrP<<"\" for the branch names of the topology tags (default)."<<endl;
               m_vNm_compDcyBrP[i]=nm_compDcyBrP;
+            }
+          if(m_vNDcyBrToBePrtdMax[i]!=ULONG_MAX)
+            {
+              cout<<"  Maximum number of decay branches to be printed: "<<m_vNDcyBrToBePrtdMax[i]<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  Maximum number of decay branches to be printed: ULONG_MAX (default)"<<endl;
+            }
+          if(m_vTypeOfTagRec_compDcyBrP[i]!="")
+            {
+              cout<<"  The reconstructed ";
+              if(m_vTypeOfTagRec_compDcyBrP[i]=="c"||m_vTypeOfTagRec_compDcyBrP[i]=="C") cout<<"charge";
+              else if(m_vTypeOfTagRec_compDcyBrP[i]=="n"||m_vTypeOfTagRec_compDcyBrP[i]=="N") cout<<"neutral tag";
+              else if(m_vTypeOfTagRec_compDcyBrP[i]=="!n"||m_vTypeOfTagRec_compDcyBrP[i]=="!N") cout<<"reversed neutral tag";
+              else if(m_vTypeOfTagRec_compDcyBrP[i]=="p"||m_vTypeOfTagRec_compDcyBrP[i]=="P") cout<<"PDG code";
+              else if(m_vTypeOfTagRec_compDcyBrP[i]=="i"||m_vTypeOfTagRec_compDcyBrP[i]=="I") cout<<"index";
+              cout<<" of the particle, stored in the ";
+              if(m_vTypeOfTagRec_compDcyBrP[i]=="c"||m_vTypeOfTagRec_compDcyBrP[i]=="n"||m_vTypeOfTagRec_compDcyBrP[i]=="!n"||m_vTypeOfTagRec_compDcyBrP[i]=="p"||m_vTypeOfTagRec_compDcyBrP[i]=="i") cout<<"scalar";
+              else if(m_vTypeOfTagRec_compDcyBrP[i]=="C"||m_vTypeOfTagRec_compDcyBrP[i]=="N"||m_vTypeOfTagRec_compDcyBrP[i]=="!N"||m_vTypeOfTagRec_compDcyBrP[i]=="P"||m_vTypeOfTagRec_compDcyBrP[i]=="I") cout<<"array";
+              cout<<" TBranch \""<<m_vTBrNmOfTagRec_compDcyBrP[i]<<"\", is specified to restrict its truth instances."<<endl;
+              if(m_vTypeOfTagRec_compDcyBrP[i]=="C"||m_vTypeOfTagRec_compDcyBrP[i]=="N"||m_vTypeOfTagRec_compDcyBrP[i]=="!N"||m_vTypeOfTagRec_compDcyBrP[i]=="P"||m_vTypeOfTagRec_compDcyBrP[i]=="I")
+                {
+                  cout<<"  In addition, the number of reconstructed instances of the particle is stored in the TBranch \""<<m_vTBrNmOfNRec_compDcyBrP[i]<<"\" as the length of the array."<<endl;
+                }
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  No reconstruction information to restrict the truth instances of the particle is specified (default)."<<endl;
             }
           cout<<endl;
         }
@@ -724,6 +835,16 @@ void topoana::checkInput()
           // else if(m_pidTxtPnmMap[m_vPid_compCascDcyBrP[i]].size()<=14) cout<<"\t\t";
           // else if(m_pidTxtPnmMap[m_vPid_compCascDcyBrP[i]].size()<=22) cout<<"\t";
           cout<<endl;
+          if(m_vNm_compCascDcyBrP[i]!="")
+            {
+              cout<<"  Alias for the particle is set to be \""<<m_vNm_compCascDcyBrP[i]<<"\" for the cascade decay branch names of the topology tags."<<endl;
+            }
+          else
+            {
+              sprintf(nm_compCascDcyBrP, "%d", i);
+              if(m_vbsLevStdOut==true) cout<<"  Alias for the particle is set to be \""<<nm_compCascDcyBrP<<"\" for the cascade decay branch names of the topology tags (default)."<<endl;
+              m_vNm_compCascDcyBrP[i]=nm_compCascDcyBrP;
+            }
           if(m_vNCascDcyBrToBePrtdMax[i]!=ULONG_MAX)
             {
               cout<<"  Maximum number of cascade decay branches to be printed: "<<m_vNCascDcyBrToBePrtdMax[i]<<endl;
@@ -740,15 +861,34 @@ void topoana::checkInput()
             { 
               if(m_vbsLevStdOut==true) cout<<"  Maximum hierarchy of cascade decay branches to be processed for the particle: ULONG_MAX (default)"<<endl;
             }
-          if(m_vNm_compCascDcyBrP[i]!="")
+          if(m_vTypeOfTagRec_compCascDcyBrP[i]!="")
             {
-              cout<<"  Alias for the particle is set to be \""<<m_vNm_compCascDcyBrP[i]<<"\" for the cascade decay branch names of the topology tags."<<endl;
+              cout<<"  The reconstructed ";
+              if(m_vTypeOfTagRec_compCascDcyBrP[i]=="c"||m_vTypeOfTagRec_compCascDcyBrP[i]=="C") cout<<"charge";
+              else if(m_vTypeOfTagRec_compCascDcyBrP[i]=="n"||m_vTypeOfTagRec_compCascDcyBrP[i]=="N") cout<<"neutral tag";
+              else if(m_vTypeOfTagRec_compCascDcyBrP[i]=="!n"||m_vTypeOfTagRec_compCascDcyBrP[i]=="!N") cout<<"reversed neutral tag";
+              else if(m_vTypeOfTagRec_compCascDcyBrP[i]=="p"||m_vTypeOfTagRec_compCascDcyBrP[i]=="P") cout<<"PDG code";
+              else if(m_vTypeOfTagRec_compCascDcyBrP[i]=="i"||m_vTypeOfTagRec_compCascDcyBrP[i]=="I") cout<<"index";
+              cout<<" of the particle, stored in the ";
+              if(m_vTypeOfTagRec_compCascDcyBrP[i]=="c"||m_vTypeOfTagRec_compCascDcyBrP[i]=="n"||m_vTypeOfTagRec_compCascDcyBrP[i]=="!n"||m_vTypeOfTagRec_compCascDcyBrP[i]=="p"||m_vTypeOfTagRec_compCascDcyBrP[i]=="i") cout<<"scalar";
+              else if(m_vTypeOfTagRec_compCascDcyBrP[i]=="C"||m_vTypeOfTagRec_compCascDcyBrP[i]=="N"||m_vTypeOfTagRec_compCascDcyBrP[i]=="!N"||m_vTypeOfTagRec_compCascDcyBrP[i]=="P"||m_vTypeOfTagRec_compCascDcyBrP[i]=="I") cout<<"array";
+              cout<<" TBranch \""<<m_vTBrNmOfTagRec_compCascDcyBrP[i]<<"\", is specified to restrict its truth instances."<<endl;
+              if(m_vTypeOfTagRec_compCascDcyBrP[i]=="C"||m_vTypeOfTagRec_compCascDcyBrP[i]=="N"||m_vTypeOfTagRec_compCascDcyBrP[i]=="!N"||m_vTypeOfTagRec_compCascDcyBrP[i]=="P"||m_vTypeOfTagRec_compCascDcyBrP[i]=="I")
+                {
+                  cout<<"  In addition, the number of reconstructed instances of the particle is stored in the TBranch \""<<m_vTBrNmOfNRec_compCascDcyBrP[i]<<"\" as the length of the array."<<endl;
+                }
             }
           else
             {
-              sprintf(nm_compCascDcyBrP, "%d", i);
-              if(m_vbsLevStdOut==true) cout<<"  Alias for the particle is set to be \""<<nm_compCascDcyBrP<<"\" for the cascade decay branch names of the topology tags (default)."<<endl;
-              m_vNm_compCascDcyBrP[i]=nm_compCascDcyBrP;
+              if(m_vbsLevStdOut==true) cout<<"  No reconstruction information to restrict the truth instances of the particle is specified (default)."<<endl;
+            }
+          if(m_vOptIdxAndMidxOfDcyBrInCascDcyBrP[i]==true)
+            {
+              cout<<"  The indices and mother indices of the decay branches in the cascade decay branches of the particle are output to the pdf file."<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the decay branches in the cascade decay branches of the particle are not output to the pdf file (default)."<<endl;
             }
           cout<<endl;
         }
@@ -825,6 +965,16 @@ void topoana::checkInput()
           // else if(m_pidTxtPnmMap[m_vPid_compDcyFStP[i]].size()<=14) cout<<"\t\t";
           // else if(m_pidTxtPnmMap[m_vPid_compDcyFStP[i]].size()<=22) cout<<"\t";
           cout<<endl;
+          if(m_vNm_compDcyFStP[i]!="")
+            {
+              cout<<"  Alias for the particle is set to be \""<<m_vNm_compDcyFStP[i]<<"\" for the cascade branch names of the topology tags."<<endl;
+            }
+          else
+            {
+              sprintf(nm_compDcyFStP, "%d", i);
+              if(m_vbsLevStdOut==true) cout<<"  Alias for the particle is set to be \""<<nm_compDcyFStP<<"\" for the cascade branch names of the topology tags (default)."<<endl;
+              m_vNm_compDcyFStP[i]=nm_compDcyFStP;
+            }
           if(m_vNDcyFStToBePrtdMax[i]!=ULONG_MAX)
             {
               cout<<"  Maximum number of decay final states to be printed: "<<m_vNDcyFStToBePrtdMax[i]<<endl;
@@ -841,15 +991,26 @@ void topoana::checkInput()
             { 
               if(m_vbsLevStdOut==true) cout<<"  Number of decay final state particles to be processed for the particle: ULONG_MAX (default)"<<endl;
             }
-          if(m_vNm_compDcyFStP[i]!="")
+          if(m_vTypeOfTagRec_compDcyFStP[i]!="")
             {
-              cout<<"  Alias for the particle is set to be \""<<m_vNm_compDcyFStP[i]<<"\" for the cascade branch names of the topology tags."<<endl;
+              cout<<"  The reconstructed ";
+              if(m_vTypeOfTagRec_compDcyFStP[i]=="c"||m_vTypeOfTagRec_compDcyFStP[i]=="C") cout<<"charge";
+              else if(m_vTypeOfTagRec_compDcyFStP[i]=="n"||m_vTypeOfTagRec_compDcyFStP[i]=="N") cout<<"neutral tag";
+              else if(m_vTypeOfTagRec_compDcyFStP[i]=="!n"||m_vTypeOfTagRec_compDcyFStP[i]=="!N") cout<<"reversed neutral tag";
+              else if(m_vTypeOfTagRec_compDcyFStP[i]=="p"||m_vTypeOfTagRec_compDcyFStP[i]=="P") cout<<"PDG code";
+              else if(m_vTypeOfTagRec_compDcyFStP[i]=="i"||m_vTypeOfTagRec_compDcyFStP[i]=="I") cout<<"index";
+              cout<<" of the particle, stored in the ";
+              if(m_vTypeOfTagRec_compDcyFStP[i]=="c"||m_vTypeOfTagRec_compDcyFStP[i]=="n"||m_vTypeOfTagRec_compDcyFStP[i]=="!n"||m_vTypeOfTagRec_compDcyFStP[i]=="p"||m_vTypeOfTagRec_compDcyFStP[i]=="i") cout<<"scalar";
+              else if(m_vTypeOfTagRec_compDcyFStP[i]=="C"||m_vTypeOfTagRec_compDcyFStP[i]=="N"||m_vTypeOfTagRec_compDcyFStP[i]=="!N"||m_vTypeOfTagRec_compDcyFStP[i]=="P"||m_vTypeOfTagRec_compDcyFStP[i]=="I") cout<<"array";
+              cout<<" TBranch \""<<m_vTBrNmOfTagRec_compDcyFStP[i]<<"\", is specified to restrict its truth instances."<<endl;
+              if(m_vTypeOfTagRec_compDcyFStP[i]=="C"||m_vTypeOfTagRec_compDcyFStP[i]=="N"||m_vTypeOfTagRec_compDcyFStP[i]=="!N"||m_vTypeOfTagRec_compDcyFStP[i]=="P"||m_vTypeOfTagRec_compDcyFStP[i]=="I")
+                {
+                  cout<<"  In addition, the number of reconstructed instances of the particle is stored in the TBranch \""<<m_vTBrNmOfNRec_compDcyFStP[i]<<"\" as the length of the array."<<endl;
+                }
             }
           else
             {
-              sprintf(nm_compDcyFStP, "%d", i);
-              if(m_vbsLevStdOut==true) cout<<"  Alias for the particle is set to be \""<<nm_compDcyFStP<<"\" for the cascade branch names of the topology tags (default)."<<endl;
-              m_vNm_compDcyFStP[i]=nm_compDcyFStP;
+              if(m_vbsLevStdOut==true) cout<<"  No reconstruction information to restrict the truth instances of the particle is specified (default)."<<endl;
             }
           cout<<endl;
         }
@@ -926,14 +1087,6 @@ void topoana::checkInput()
           // else if(m_pidTxtPnmMap[m_vPid_compProdBrP[i]].size()<=14) cout<<"\t\t";
           // else if(m_pidTxtPnmMap[m_vPid_compProdBrP[i]].size()<=22) cout<<"\t";
           cout<<endl;
-          if(m_vNProdBrToBePrtdMax[i]!=ULONG_MAX)
-            {
-              cout<<"  Maximum number of production branches to be printed: "<<m_vNProdBrToBePrtdMax[i]<<endl;
-            }
-          else
-            {
-              if(m_vbsLevStdOut==true) cout<<"  Maximum number of production branches to be printed: ULONG_MAX (default)"<<endl;
-            }
           if(m_vNm_compProdBrP[i]!="")
             {
               cout<<"  Alias for the particle is set to be \""<<m_vNm_compProdBrP[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -943,6 +1096,35 @@ void topoana::checkInput()
               sprintf(nm_compProdBrP, "%d", i);
               if(m_vbsLevStdOut==true) cout<<"  Alias for the particle is set to be \""<<nm_compProdBrP<<"\" for the branch names of the topology tags (default)."<<endl;
               m_vNm_compProdBrP[i]=nm_compProdBrP;
+            }
+          if(m_vNProdBrToBePrtdMax[i]!=ULONG_MAX)
+            {
+              cout<<"  Maximum number of production branches to be printed: "<<m_vNProdBrToBePrtdMax[i]<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  Maximum number of production branches to be printed: ULONG_MAX (default)"<<endl;
+            }
+          if(m_vTypeOfTagRec_compProdBrP[i]!="")
+            {
+              cout<<"  The reconstructed ";
+              if(m_vTypeOfTagRec_compProdBrP[i]=="c"||m_vTypeOfTagRec_compProdBrP[i]=="C") cout<<"charge";
+              else if(m_vTypeOfTagRec_compProdBrP[i]=="n"||m_vTypeOfTagRec_compProdBrP[i]=="N") cout<<"neutral tag";
+              else if(m_vTypeOfTagRec_compProdBrP[i]=="!n"||m_vTypeOfTagRec_compProdBrP[i]=="!N") cout<<"reversed neutral tag";
+              else if(m_vTypeOfTagRec_compProdBrP[i]=="p"||m_vTypeOfTagRec_compProdBrP[i]=="P") cout<<"PDG code";
+              else if(m_vTypeOfTagRec_compProdBrP[i]=="i"||m_vTypeOfTagRec_compProdBrP[i]=="I") cout<<"index";
+              cout<<" of the particle, stored in the ";
+              if(m_vTypeOfTagRec_compProdBrP[i]=="c"||m_vTypeOfTagRec_compProdBrP[i]=="n"||m_vTypeOfTagRec_compProdBrP[i]=="!n"||m_vTypeOfTagRec_compProdBrP[i]=="p"||m_vTypeOfTagRec_compProdBrP[i]=="i") cout<<"scalar";
+              else if(m_vTypeOfTagRec_compProdBrP[i]=="C"||m_vTypeOfTagRec_compProdBrP[i]=="N"||m_vTypeOfTagRec_compProdBrP[i]=="!N"||m_vTypeOfTagRec_compProdBrP[i]=="P"||m_vTypeOfTagRec_compProdBrP[i]=="I") cout<<"array";
+              cout<<" TBranch \""<<m_vTBrNmOfTagRec_compProdBrP[i]<<"\", is specified to restrict its truth instances."<<endl;
+              if(m_vTypeOfTagRec_compProdBrP[i]=="C"||m_vTypeOfTagRec_compProdBrP[i]=="N"||m_vTypeOfTagRec_compProdBrP[i]=="!N"||m_vTypeOfTagRec_compProdBrP[i]=="P"||m_vTypeOfTagRec_compProdBrP[i]=="I")
+                {
+                  cout<<"  In addition, the number of reconstructed instances of the particle is stored in the TBranch \""<<m_vTBrNmOfNRec_compProdBrP[i]<<"\" as the length of the array."<<endl;
+                }
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  No reconstruction information to restrict the truth instances of the particle is specified (default)."<<endl;
             }
           cout<<endl;
         }
@@ -1014,14 +1196,6 @@ void topoana::checkInput()
           // else if(m_pidTxtPnmMap[m_vPid_compMP[i]].size()<=14) cout<<"\t\t";
           // else if(m_pidTxtPnmMap[m_vPid_compMP[i]].size()<=22) cout<<"\t";
           cout<<endl;
-          if(m_vNMToBePrtdMax[i]!=ULONG_MAX)
-            {
-              cout<<"  Maximum number of mothers to be printed: "<<m_vNMToBePrtdMax[i]<<endl;
-            }
-          else
-            {
-              if(m_vbsLevStdOut==true) cout<<"  Maximum number of mothers to be printed: ULONG_MAX (default)"<<endl;
-            }
           if(m_vNm_compMP[i]!="")
             {
               cout<<"  Alias for the particle is set to be \""<<m_vNm_compMP[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -1031,6 +1205,35 @@ void topoana::checkInput()
               sprintf(nm_compMP, "%d", i);
               if(m_vbsLevStdOut==true) cout<<"  Alias for the particle is set to be \""<<nm_compMP<<"\" for the branch names of the topology tags (default)."<<endl;
               m_vNm_compMP[i]=nm_compMP;
+            }
+          if(m_vNMToBePrtdMax[i]!=ULONG_MAX)
+            {
+              cout<<"  Maximum number of mothers to be printed: "<<m_vNMToBePrtdMax[i]<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  Maximum number of mothers to be printed: ULONG_MAX (default)"<<endl;
+            }
+          if(m_vTypeOfTagRec_compMP[i]!="")
+            {
+              cout<<"  The reconstructed ";
+              if(m_vTypeOfTagRec_compMP[i]=="c"||m_vTypeOfTagRec_compMP[i]=="C") cout<<"charge";
+              else if(m_vTypeOfTagRec_compMP[i]=="n"||m_vTypeOfTagRec_compMP[i]=="N") cout<<"neutral tag";
+              else if(m_vTypeOfTagRec_compMP[i]=="!n"||m_vTypeOfTagRec_compMP[i]=="!N") cout<<"reversed neutral tag";
+              else if(m_vTypeOfTagRec_compMP[i]=="p"||m_vTypeOfTagRec_compMP[i]=="P") cout<<"PDG code";
+              else if(m_vTypeOfTagRec_compMP[i]=="i"||m_vTypeOfTagRec_compMP[i]=="I") cout<<"index";
+              cout<<" of the particle, stored in the ";
+              if(m_vTypeOfTagRec_compMP[i]=="c"||m_vTypeOfTagRec_compMP[i]=="n"||m_vTypeOfTagRec_compMP[i]=="!n"||m_vTypeOfTagRec_compMP[i]=="p"||m_vTypeOfTagRec_compMP[i]=="i") cout<<"scalar";
+              else if(m_vTypeOfTagRec_compMP[i]=="C"||m_vTypeOfTagRec_compMP[i]=="N"||m_vTypeOfTagRec_compMP[i]=="!N"||m_vTypeOfTagRec_compMP[i]=="P"||m_vTypeOfTagRec_compMP[i]=="I") cout<<"array";
+              cout<<" TBranch \""<<m_vTBrNmOfTagRec_compMP[i]<<"\", is specified to restrict its truth instances."<<endl;
+              if(m_vTypeOfTagRec_compMP[i]=="C"||m_vTypeOfTagRec_compMP[i]=="N"||m_vTypeOfTagRec_compMP[i]=="!N"||m_vTypeOfTagRec_compMP[i]=="P"||m_vTypeOfTagRec_compMP[i]=="I")
+                {
+                  cout<<"  In addition, the number of reconstructed instances of the particle is stored in the TBranch \""<<m_vTBrNmOfNRec_compMP[i]<<"\" as the length of the array."<<endl;
+                }
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  No reconstruction information to restrict the truth instances of the particle is specified (default)."<<endl;
             }
           cout<<endl;
         }
@@ -1102,14 +1305,6 @@ void topoana::checkInput()
               writePnmFromPid(cout,"TxtPnm",m_vVPid_compIncDcyBr[i][j]);
               cout<<endl;
 	    }
-          if(m_vNExcCompsToBePrtdMax[i]!=ULONG_MAX)
-            {
-              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNExcCompsToBePrtdMax[i]<<endl;
-            }
-          else
-            {
-              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
-            }
           if(m_vNm_compIncDcyBr[i]!="")
             {
               cout<<"  Alias for the inclusive decay branch is set to be \""<<m_vNm_compIncDcyBr[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -1118,6 +1313,28 @@ void topoana::checkInput()
             {
               sprintf(nm_compIncDcyBr, "%d", i);
               if(m_vbsLevStdOut==true) cout<<"  Alias for the inclusive decay branch is set to be \""<<nm_compIncDcyBr<<"\" for the branch names of the topology tags (default)."<<endl;
+            }
+          if(m_vNExcCompsToBePrtdMax[i]!=ULONG_MAX)
+            {
+              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNExcCompsToBePrtdMax[i]<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
+            }
+          if(m_vOption_compIncDcyBr[i]!="")
+            {
+              cout<<"  The remaining particles unspecified in the inclusive decay are restricted to ";
+              if(m_vOption_compIncDcyBr[i]=="Is"||m_vOption_compIncDcyBr[i]=="Is-IRA") cout<<"strict ISR";
+              else if(m_vOption_compIncDcyBr[i]=="Ig"||m_vOption_compIncDcyBr[i]=="Ig-IRA") cout<<"generalized ISR";
+              else if(m_vOption_compIncDcyBr[i]=="Fs"||m_vOption_compIncDcyBr[i]=="Fs-IRA") cout<<"strict FSR";
+              else if(m_vOption_compIncDcyBr[i]=="Fg"||m_vOption_compIncDcyBr[i]=="Fg-IRA") cout<<"generalized FSR";
+              cout<<" photons."<<endl;
+              if(m_vOption_compIncDcyBr[i].find("-IRA")!=string::npos) cout<<"  The specified decay branch is intermediate-resonance-allowed.";
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  No restrictions are placed on the remaining particles unspecified in the inclusive decay (default)."<<endl;
             }
           cout<<endl;
         }
@@ -1146,8 +1363,8 @@ void topoana::checkInput()
             }
           else
             {
-              compIncDcyBr.push_front(11);
-              compIncDcyBr.push_front(-11);
+              compIncDcyBr.push_front(m_pidOfISt1);
+              compIncDcyBr.push_front(m_pidOfISt2);
             }
 
           string ordNumSufi="th";
@@ -1180,18 +1397,18 @@ void topoana::checkInput()
             {
               compCcIncDcyBr.clear();
               list<int>::iterator liit=compIncDcyBr.begin();
-              if((*liit)==-11) liit++;
+              if((*liit)==m_pidOfISt2) liit++;
               for(liit++;liit!=compIncDcyBr.end();liit++) compCcIncDcyBr.push_back(getCcPid((*liit)));
               sortByPidAndPchrg(compCcIncDcyBr);
               liit=compIncDcyBr.begin();
-              if((*liit)!=-11)
+              if((*liit)!=m_pidOfISt2)
                 {
                   compCcIncDcyBr.push_front(getCcPid((*liit)));
                 }
               else
                 {
-                  compCcIncDcyBr.push_front(11);
-                  compCcIncDcyBr.push_front(-11);
+                  compCcIncDcyBr.push_front(m_pidOfISt1);
+                  compCcIncDcyBr.push_front(m_pidOfISt2);
                 }
               m_vCompCcIncDcyBr.push_back(compCcIncDcyBr);
               if(compCcIncDcyBr==compIncDcyBr) m_vICcCompIncDcyBr.push_back(0);
@@ -1210,17 +1427,14 @@ void topoana::checkInput()
           cout<<" ";
           list<int>::iterator liit=compIncDcyBr.begin();
           writePnmFromPid(cout,"TxtPnm",(*liit));
+          if((*liit)==m_pidOfISt2)
+            {
+              liit++;
+              writePnmFromPid(cout,"TxtPnm",(*liit));
+            }
           cout<<" -->";
           for(liit++;liit!=compIncDcyBr.end();liit++) writePnmFromPid(cout,"TxtPnm",(*liit));
           cout<<" + anything"<<endl;
-          if(m_vNExcCompsToBePrtdMax[i]!=ULONG_MAX)
-            {
-              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNExcCompsToBePrtdMax[i]<<endl;
-            }
-          else
-            {
-              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
-            }
           if(m_vNm_compIncDcyBr[i]!="")
             {
               cout<<"  Alias for the inclusive decay branch is set to be \""<<m_vNm_compIncDcyBr[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -1230,6 +1444,28 @@ void topoana::checkInput()
               sprintf(nm_compIncDcyBr, "%d", i);
               if(m_vbsLevStdOut==true) cout<<"  Alias for the inclusive decay branch is set to be \""<<nm_compIncDcyBr<<"\" for the branch names of the topology tags (default)."<<endl;
               m_vNm_compIncDcyBr[i]=nm_compIncDcyBr;
+            }
+          if(m_vNExcCompsToBePrtdMax[i]!=ULONG_MAX)
+            {
+              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNExcCompsToBePrtdMax[i]<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
+            }
+          if(m_vOption_compIncDcyBr[i]!="")
+            {
+              cout<<"  The remaining particles unspecified in the inclusive decay are restricted to ";
+              if(m_vOption_compIncDcyBr[i]=="Is"||m_vOption_compIncDcyBr[i]=="Is-IRA") cout<<"strict ISR";
+              else if(m_vOption_compIncDcyBr[i]=="Ig"||m_vOption_compIncDcyBr[i]=="Ig-IRA") cout<<"generalized ISR";
+              else if(m_vOption_compIncDcyBr[i]=="Fs"||m_vOption_compIncDcyBr[i]=="Fs-IRA") cout<<"strict FSR";
+              else if(m_vOption_compIncDcyBr[i]=="Fg"||m_vOption_compIncDcyBr[i]=="Fg-IRA") cout<<"generalized FSR";
+              cout<<" photons."<<endl;
+              if(m_vOption_compIncDcyBr[i].find("-IRA")!=string::npos) cout<<"  The specified decay branch is intermediate-resonance-allowed.";
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  No restrictions are placed on the remaining particles unspecified in the inclusive decay (default)."<<endl;
             }
           cout<<endl;
         }
@@ -1251,14 +1487,6 @@ void topoana::checkInput()
               writePnmFromPid(cout,"TxtPnm",m_vVPid_compIRADcyBr[i][j]);
               cout<<endl;
 	    }
-          if(m_vNIntStrusToBePrtdMax[i]!=ULONG_MAX)
-            {
-              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNIntStrusToBePrtdMax[i]<<endl;
-            }
-          else
-            {
-              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
-            }
           if(m_vNm_compIRADcyBr[i]!="")
             {
               cout<<"  Alias for the intermediate-resonance-allowed decay branch is set to be \""<<m_vNm_compIRADcyBr[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -1267,6 +1495,14 @@ void topoana::checkInput()
             {
               sprintf(nm_compIRADcyBr, "%d", i);
               if(m_vbsLevStdOut==true) cout<<"  Alias for the intermediate-resonance-allowed decay branch is set to be \""<<nm_compIRADcyBr<<"\" for the branch names of the topology tags (default)."<<endl;
+            }
+          if(m_vNIntStrusToBePrtdMax[i]!=ULONG_MAX)
+            {
+              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNIntStrusToBePrtdMax[i]<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
             }
           cout<<endl;
         }
@@ -1295,8 +1531,8 @@ void topoana::checkInput()
             }
           else
             {
-              compIRADcyBr.push_front(11);
-              compIRADcyBr.push_front(-11);
+              compIRADcyBr.push_front(m_pidOfISt1);
+              compIRADcyBr.push_front(m_pidOfISt2);
             }
 
           string ordNumSufi="th";
@@ -1329,18 +1565,18 @@ void topoana::checkInput()
             {
               compCcIRADcyBr.clear();
               list<int>::iterator liit=compIRADcyBr.begin();
-              if((*liit)==-11) liit++;
+              if((*liit)==m_pidOfISt2) liit++;
               for(liit++;liit!=compIRADcyBr.end();liit++) compCcIRADcyBr.push_back(getCcPid((*liit)));
               sortByPidAndPchrg(compCcIRADcyBr);
               liit=compIRADcyBr.begin();
-              if((*liit)!=-11)
+              if((*liit)!=m_pidOfISt2)
                 {
                   compCcIRADcyBr.push_front(getCcPid((*liit)));
                 }
               else
                 {
-                  compCcIRADcyBr.push_front(11);
-                  compCcIRADcyBr.push_front(-11);
+                  compCcIRADcyBr.push_front(m_pidOfISt1);
+                  compCcIRADcyBr.push_front(m_pidOfISt2);
                 }
               m_vCompCcIRADcyBr.push_back(compCcIRADcyBr);
               if(compCcIRADcyBr==compIRADcyBr) m_vICcCompIRADcyBr.push_back(0);
@@ -1359,7 +1595,7 @@ void topoana::checkInput()
           cout<<" ";
           list<int>::iterator liit=compIRADcyBr.begin();
           writePnmFromPid(cout,"TxtPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(cout,"TxtPnm",(*liit));
@@ -1367,14 +1603,6 @@ void topoana::checkInput()
           cout<<" -->";
           for(liit++;liit!=compIRADcyBr.end();liit++) writePnmFromPid(cout,"TxtPnm",(*liit));
           cout<<endl;
-          if(m_vNIntStrusToBePrtdMax[i]!=ULONG_MAX)
-            {
-              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNIntStrusToBePrtdMax[i]<<endl;
-            }
-          else
-            {
-              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
-            }
           if(m_vNm_compIRADcyBr[i]!="")
             {
               cout<<"  Alias for the intermediate-resonance-allowed decay branch is set to be \""<<m_vNm_compIRADcyBr[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -1384,6 +1612,14 @@ void topoana::checkInput()
               sprintf(nm_compIRADcyBr, "%d", i);
               if(m_vbsLevStdOut==true) cout<<"  Alias for the intermediate-resonance-allowed decay branch is set to be \""<<nm_compIRADcyBr<<"\" for the branch names of the topology tags (default)."<<endl;
               m_vNm_compIRADcyBr[i]=nm_compIRADcyBr;
+            }
+          if(m_vNIntStrusToBePrtdMax[i]!=ULONG_MAX)
+            {
+              cout<<"  Maximum number of exclusive components to be printed: "<<m_vNIntStrusToBePrtdMax[i]<<endl;
+            }
+          else
+            {
+              if(m_vbsLevStdOut==true) cout<<"  Maximum number of exclusive components to be printed: ULONG_MAX (default)"<<endl;
             }
           cout<<endl;
         }
@@ -1419,6 +1655,22 @@ void topoana::checkInput()
             }
           cout<<endl;
 	}
+      if(m_sigDcyIFStsUnderSigDcyTr==true)
+        {               
+          cout<<"  The signal decay initial-final states in the output pdf file are put under their respective signal decay trees."<<endl;
+        }
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The signal decay final states in the output pdf file are put in a column next to that for signal decay trees (default)."<<endl;
+        }
+      if(m_optIdxAndMidxOfSigDcyBrInSigDcyTr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal decay trees are output to the pdf file."<<endl;
+        }
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal decay trees are not output to the pdf file (default)."<<endl;
+        }
       cout<<endl;
 
       m_vSigDcyTr.clear(); m_vCcSigDcyTr.clear();
@@ -1523,27 +1775,29 @@ void topoana::checkInput()
         }
 
       cout<<"i.e.:"<<endl<<endl;
+      vector<int> vIMSigDcyBr;
       list<int> sigDcyBr;
       for(unsigned int i=0;i<m_vSigDcyTr.size();i++)
         { 
           sigDcyTr.clear();
           sigDcyTr=m_vSigDcyTr[i];
+          getVIMDcyBr(sigDcyTr,vIMSigDcyBr);
           for(unsigned int j=0;j<sigDcyTr.size();j++)
             {
               sigDcyBr.clear();
               sigDcyBr=sigDcyTr[j];
-              cout<<" ";
+              cout<<"  "<<j<<"  & ";
               list<int>::iterator liit=sigDcyBr.begin();
               writePnmFromPid(cout,"TxtPnm",(*liit));
               // The condition "j==0" is set for the initial state particle pair e+e-;the condition "(*liit)==1, 2, 3, 4, 5 or 6" is set for the intermediate state quark pair ddbar, uubar, ssbar, ccbar, bbbar or ttbar;
-              if(j==0||(*liit)==1||(*liit)==2||(*liit)==3||(*liit)==4||(*liit)==5||(*liit)==6)
+              if((j==0&&(*liit)==m_pidOfISt2)||(*liit)==1||(*liit)==2||(*liit)==3||(*liit)==4||(*liit)==5||(*liit)==6)
                 {
                   liit++;
                   writePnmFromPid(cout,"TxtPnm",(*liit));
                 }
               cout<<" -->";
               for(liit++;liit!=sigDcyBr.end();liit++) writePnmFromPid(cout,"TxtPnm",(*liit));
-              cout<<endl;
+              cout<<"  &  "<<vIMSigDcyBr[j]<<endl;
             }
           if(m_vNm_sigDcyTr[i]!="")
             {
@@ -1557,6 +1811,23 @@ void topoana::checkInput()
             }
           cout<<endl;
         }
+      if(m_sigDcyIFStsUnderSigDcyTr==true)
+        {
+          cout<<"  The signal decay initial-final states in the output pdf file are put under their respective signal decay trees."<<endl;
+        }
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The signal decay final states in the output pdf file are put in a column next to that for signal decay trees (default)."<<endl;
+        }   
+      if(m_optIdxAndMidxOfSigDcyBrInSigDcyTr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal decay trees are output to the pdf file."<<endl;
+        }   
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal decay trees are not output to the pdf file (default)."<<endl;
+        }
+      cout<<endl;
 
       m_iSigDcyTrIDcyTrMap.clear();
       m_iSigDcyIFSts_trIDcyIFStsMap.clear();
@@ -1606,8 +1877,8 @@ void topoana::checkInput()
             }
           else
             {
-              sigDcyIFSts.push_front(11);
-              sigDcyIFSts.push_front(-11);
+              sigDcyIFSts.push_front(m_pidOfISt1);
+              sigDcyIFSts.push_front(m_pidOfISt2);
             }
           string ordNumSufi="th";
           string ordNumSufj="th";
@@ -1638,14 +1909,14 @@ void topoana::checkInput()
             {
               ccSigDcyIFSts.clear();
               list<int>::iterator liit=sigDcyIFSts.begin();
-              if((*liit)==-11) liit++;
+              if((*liit)==m_pidOfISt2) liit++;
               for(liit++;liit!=sigDcyIFSts.end();liit++) ccSigDcyIFSts.push_back(getCcPid((*liit)));
               sortByPidAndPchrg(ccSigDcyIFSts);
               liit=sigDcyIFSts.begin();
-              if((*liit)==-11)
+              if((*liit)==m_pidOfISt2)
                 {
-                  ccSigDcyIFSts.push_front(11);
-                  ccSigDcyIFSts.push_front(-11);
+                  ccSigDcyIFSts.push_front(m_pidOfISt1);
+                  ccSigDcyIFSts.push_front(m_pidOfISt2);
                 }
               else
                 {
@@ -1666,7 +1937,7 @@ void topoana::checkInput()
           cout<<" ";
           list<int>::iterator liit=sigDcyIFSts.begin();
           writePnmFromPid(cout,"TxtPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(cout,"TxtPnm",(*liit));
@@ -1808,8 +2079,8 @@ void topoana::checkInput()
             }
           else
             {
-              sigDcyBr.push_front(11);
-              sigDcyBr.push_front(-11);
+              sigDcyBr.push_front(m_pidOfISt1);
+              sigDcyBr.push_front(m_pidOfISt2);
             }
 
           string ordNumSufi="th";
@@ -1841,18 +2112,18 @@ void topoana::checkInput()
             {
               ccSigDcyBr.clear();
               list<int>::iterator liit=sigDcyBr.begin();
-              if((*liit)==-11) liit++;
+              if((*liit)==m_pidOfISt2) liit++;
               for(liit++;liit!=sigDcyBr.end();liit++) ccSigDcyBr.push_back(getCcPid((*liit)));
               sortByPidAndPchrg(ccSigDcyBr);
               liit=sigDcyBr.begin();
-              if((*liit)!=-11)
+              if((*liit)!=m_pidOfISt2)
                 {
                   ccSigDcyBr.push_front(getCcPid((*liit)));
                 }
               else
                 {
-                  ccSigDcyBr.push_front(11);
-                  ccSigDcyBr.push_front(-11); 
+                  ccSigDcyBr.push_front(m_pidOfISt1);
+                  ccSigDcyBr.push_front(m_pidOfISt2); 
                 }
               m_vCcSigDcyBr.push_back(ccSigDcyBr);
               if(ccSigDcyBr==sigDcyBr) m_vICcSigDcyBr.push_back(0);
@@ -1869,6 +2140,11 @@ void topoana::checkInput()
           cout<<" ";
           list<int>::iterator liit=sigDcyBr.begin();
           writePnmFromPid(cout,"TxtPnm",(*liit));
+          if((*liit)==m_pidOfISt2)
+            {
+              liit++;
+              writePnmFromPid(cout,"TxtPnm",(*liit));
+            }
           cout<<" -->";
           for(liit++;liit!=sigDcyBr.end();liit++) writePnmFromPid(cout,"TxtPnm",(*liit));
           cout<<endl;
@@ -1930,8 +2206,8 @@ void topoana::checkInput()
             }
           else
             {
-              sigIncDcyBr.push_front(11);
-              sigIncDcyBr.push_front(-11);
+              sigIncDcyBr.push_front(m_pidOfISt1);
+              sigIncDcyBr.push_front(m_pidOfISt2);
             }
 
           string ordNumSufi="th";
@@ -1963,18 +2239,18 @@ void topoana::checkInput()
             {
               ccSigIncDcyBr.clear();
               list<int>::iterator liit=sigIncDcyBr.begin();
-              if((*liit)==-11) liit++;
+              if((*liit)==m_pidOfISt2) liit++;
               for(liit++;liit!=sigIncDcyBr.end();liit++) ccSigIncDcyBr.push_back(getCcPid((*liit)));
               sortByPidAndPchrg(ccSigIncDcyBr);
               liit=sigIncDcyBr.begin();
-              if((*liit)!=-11)
+              if((*liit)!=m_pidOfISt2)
                 {
                   ccSigIncDcyBr.push_front(getCcPid((*liit)));
                 }
               else
                 {
-                  ccSigIncDcyBr.push_front(11);
-                  ccSigIncDcyBr.push_front(-11); 
+                  ccSigIncDcyBr.push_front(m_pidOfISt1);
+                  ccSigIncDcyBr.push_front(m_pidOfISt2); 
                 }
               m_vCcSigIncDcyBr.push_back(ccSigIncDcyBr);
               if(ccSigIncDcyBr==sigIncDcyBr) m_vICcSigIncDcyBr.push_back(0);
@@ -1991,6 +2267,11 @@ void topoana::checkInput()
           cout<<" ";
           list<int>::iterator liit=sigIncDcyBr.begin();
           writePnmFromPid(cout,"TxtPnm",(*liit));
+          if((*liit)==m_pidOfISt2)
+            {
+              liit++;
+              writePnmFromPid(cout,"TxtPnm",(*liit));
+            }
           cout<<" -->";
           for(liit++;liit!=sigIncDcyBr.end();liit++) writePnmFromPid(cout,"TxtPnm",(*liit));
           cout<<" + anything";
@@ -2028,7 +2309,6 @@ void topoana::checkInput()
               else cout<<"\t";
               cout<<setiosflags(ios::right)<<setw(3)<<m_vVMidx_sigCascDcyBr[i][j]<<resetiosflags(ios::adjustfield)<<endl;
 	    }
-          cout<<"debug:zhouxy:m_vNm_sigCascDcyBr.size()="<<m_vNm_sigCascDcyBr.size()<<"\ti="<<i<<endl;
           if(m_vNm_sigCascDcyBr[i]!="")
             {
               cout<<"  Alias for the signal cascade decay branch is set to be \""<<m_vNm_sigCascDcyBr[i]<<"\" for the branch names of the topology tags."<<endl;
@@ -2040,6 +2320,14 @@ void topoana::checkInput()
             }
           cout<<endl;
 	}
+      if(m_optIdxAndMidxOfSigDcyBrInSigCascDcyBr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal cascade decay branches are output to the pdf file."<<endl;
+        }
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal cascade decay branches are not output to the pdf file (default)."<<endl;
+        }
       cout<<endl;
 
       m_vSigCascDcyBr.clear(); m_vCcSigCascDcyBr.clear();
@@ -2107,27 +2395,29 @@ void topoana::checkInput()
         }
 
       cout<<"i.e.:"<<endl<<endl;
+      vector<int> vIMSigDcyBr;
       list<int> sigDcyBr;
       for(unsigned int i=0;i<m_vSigCascDcyBr.size();i++)
         { 
           sigCascDcyBr.clear();
           sigCascDcyBr=m_vSigCascDcyBr[i];
+          getVIMDcyBr(sigCascDcyBr,vIMSigDcyBr);
           vSigCascDcyBrIdxOfHead=m_vVSigCascDcyBrIdxOfHead[i];
           for(unsigned int j=0;j<sigCascDcyBr.size();j++)
             {
               sigDcyBr.clear();
               sigDcyBr=sigCascDcyBr[j];
-              cout<<" ";
+              cout<<"  "<<j<<"  & ";
               list<int>::iterator liit=sigDcyBr.begin();
               writePnmFromPid(cout,"TxtPnm",(*liit));
-              if(j==0&&(*liit)==-11)
+              if(j==0&&(*liit)==m_pidOfISt2)
               {
                 liit++;
                 writePnmFromPid(cout,"TxtPnm",(*liit));
               }
               cout<<" -->";
               for(liit++;liit!=sigDcyBr.end();liit++) writePnmFromPid(cout,"TxtPnm",(*liit));
-              cout<<endl;
+              cout<<"  &  "<<vIMSigDcyBr[j]<<endl;
             }
           if(m_vNm_sigCascDcyBr[i]!="")
             {
@@ -2141,6 +2431,15 @@ void topoana::checkInput()
             }
           cout<<endl;
         }
+      if(m_optIdxAndMidxOfSigDcyBrInSigCascDcyBr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal cascade decay branches are output to the pdf file."<<endl;
+        } 
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal cascade decay branches are not output to the pdf file (default)."<<endl;
+        }
+      cout<<endl;
     }
 
   if(m_vVPid_sigIncCascDcyBr.size()==0)
@@ -2173,6 +2472,14 @@ void topoana::checkInput()
             }
           cout<<endl;
 	}
+      if(m_optIdxAndMidxOfSigDcyBrInSigIncCascDcyBr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive cascade decay branches are output to the pdf file."<<endl;
+        } 
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive cascade decay branches are not output to the pdf file (default)."<<endl;
+        }
       cout<<endl;
 
       m_vSigIncCascDcyBr.clear(); m_vCcSigIncCascDcyBr.clear();
@@ -2244,20 +2551,22 @@ void topoana::checkInput()
         }
 
       cout<<"i.e.:"<<endl<<endl;
+      vector<int> vIMSigDcyBr;
       list<int> sigDcyBr;
       for(unsigned int i=0;i<m_vSigIncCascDcyBr.size();i++)
         { 
           sigIncCascDcyBr.clear();
           sigIncCascDcyBr=m_vSigIncCascDcyBr[i];
+          getVIMDcyBr(sigIncCascDcyBr,vIMSigDcyBr);
           vSigIncCascDcyBrIdxOfHead=m_vVSigIncCascDcyBrIdxOfHead[i];
           for(unsigned int j=0;j<sigIncCascDcyBr.size();j++)
             {
               sigDcyBr.clear();
               sigDcyBr=sigIncCascDcyBr[j];
-              cout<<" ";
+              cout<<"  "<<j<<"  & ";
               list<int>::iterator liit=sigDcyBr.begin();
               writePnmFromPid(cout,"TxtPnm",(*liit));
-              if(j==0&&(*liit)==-11)
+              if(j==0&&(*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(cout,"TxtPnm",(*liit));
@@ -2269,7 +2578,7 @@ void topoana::checkInput()
                   cout<<" +";
                   writePnmFromPid(cout,"TxtPnm",m_pidOfAnything);
                 }
-              cout<<endl;
+              cout<<"  &  "<<vIMSigDcyBr[j]<<endl;
             }
           if(m_vNm_sigIncCascDcyBr[i]!="")
             {
@@ -2283,6 +2592,15 @@ void topoana::checkInput()
             }
           cout<<endl;
         }
+      if(m_optIdxAndMidxOfSigDcyBrInSigIncCascDcyBr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive cascade decay branches are output to the pdf file."<<endl;
+        } 
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive cascade decay branches are not output to the pdf file (default)."<<endl;
+        }
+      cout<<endl;
     }
 
   if(m_vVPid_sigIRADcyBr.size()==0)
@@ -2329,8 +2647,8 @@ void topoana::checkInput()
             }
           else
             {
-              sigIRADcyBr.push_front(11);
-              sigIRADcyBr.push_front(-11);
+              sigIRADcyBr.push_front(m_pidOfISt1);
+              sigIRADcyBr.push_front(m_pidOfISt2);
             }
 
           string ordNumSufi="th";
@@ -2362,18 +2680,18 @@ void topoana::checkInput()
             {
               ccSigIRADcyBr.clear();
               list<int>::iterator liit=sigIRADcyBr.begin();
-              if((*liit)==-11) liit++;
+              if((*liit)==m_pidOfISt2) liit++;
               for(liit++;liit!=sigIRADcyBr.end();liit++) ccSigIRADcyBr.push_back(getCcPid((*liit)));
               sortByPidAndPchrg(ccSigIRADcyBr);
               liit=sigIRADcyBr.begin();
-              if((*liit)!=-11)
+              if((*liit)!=m_pidOfISt2)
                 {
                   ccSigIRADcyBr.push_front(getCcPid((*liit)));
                 }
               else
                 {
-                  ccSigIRADcyBr.push_front(11);
-                  ccSigIRADcyBr.push_front(-11);
+                  ccSigIRADcyBr.push_front(m_pidOfISt1);
+                  ccSigIRADcyBr.push_front(m_pidOfISt2);
                 }
 
               m_vCcSigIRADcyBr.push_back(ccSigIRADcyBr);
@@ -2391,7 +2709,7 @@ void topoana::checkInput()
           cout<<" ";
           list<int>::iterator liit=sigIRADcyBr.begin();
           writePnmFromPid(cout,"TxtPnm",(*liit));
-          if((*liit)==-11)
+          if((*liit)==m_pidOfISt2)
             {
               liit++;
               writePnmFromPid(cout,"TxtPnm",(*liit));
@@ -2443,6 +2761,14 @@ void topoana::checkInput()
             }
           cout<<endl;
 	}
+      if(m_optIdxAndMidxOfSigDcyBrInSigIncOrIRACascDcyBr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive or intermediate-resonance-allowed cascade decay branches are output to the pdf file."<<endl;
+        } 
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive or intermediate-resonance-allowed cascade decay branches are not output to the pdf file (default)."<<endl;
+        }
       cout<<endl;
 
       m_vSigIncOrIRACascDcyBr.clear(); m_vCcSigIncOrIRACascDcyBr.clear();
@@ -2519,20 +2845,22 @@ void topoana::checkInput()
         }
 
       cout<<"i.e.:"<<endl<<endl;
+      vector<int> vIMSigDcyBr;
       list<int> sigDcyBr;
       for(unsigned int i=0;i<m_vSigIncOrIRACascDcyBr.size();i++)
         { 
           sigIncOrIRACascDcyBr.clear();
           sigIncOrIRACascDcyBr=m_vSigIncOrIRACascDcyBr[i];
           vSigIncOrIRACascDcyBrIdxOfHead=m_vVSigIncOrIRACascDcyBrIdxOfHead[i];
+          getVIMDcyBr(sigIncOrIRACascDcyBr,vIMSigDcyBr);
           for(unsigned int j=0;j<sigIncOrIRACascDcyBr.size();j++)
             {
               sigDcyBr.clear();
               sigDcyBr=sigIncOrIRACascDcyBr[j];
-              cout<<" ";
+              cout<<"  "<<j<<"  & ";
               list<int>::iterator liit=sigDcyBr.begin();
               writePnmFromPid(cout,"TxtPnm",(*liit));
-              if(j==0&&(*liit)==-11)
+              if(j==0&&(*liit)==m_pidOfISt2)
                 {
                   liit++;
                   writePnmFromPid(cout,"TxtPnm",(*liit));
@@ -2552,7 +2880,7 @@ void topoana::checkInput()
                   cerr<<"Infor: If you really need the function, Please contact me (zhouxy@buaa.edu.cn) and then I will try to implement the function for you."<<endl;
                   exit(-1);
                 }
-              cout<<endl;
+              cout<<"  &  "<<vIMSigDcyBr[j]<<endl;
             }
           if(m_vNm_sigIncOrIRACascDcyBr[i]!="")
             {
@@ -2566,6 +2894,15 @@ void topoana::checkInput()
             }
           cout<<endl;
         }
+      if(m_optIdxAndMidxOfSigDcyBrInSigIncOrIRACascDcyBr==true)
+        {
+          cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive or intermediate-resonance-allowed cascade decay branches are output to the pdf file."<<endl;
+        }
+      else
+        {
+          if(m_vbsLevStdOut==true) cout<<"  The indices and mother indices of the signal decay branches in the signal inclusive or intermediate-resonance-allowed cascade decay branches are not output to the pdf file (default)."<<endl;
+        }
+      cout<<endl;
     }
 
   bool haveTopoAnaTasks=false;
@@ -2609,22 +2946,35 @@ void topoana::checkInput()
       if(m_vbsLevStdOut==true) cout<<"The signals in the topology maps related to signal identifications will not be sorted (default)."<<endl<<endl;
     }
 
-  if(m_initEpEmSwitch==true)
+  if((m_pidOfISt1!=m_pidOfE)||(m_pidOfISt2!=-1*m_pidOfE))
     {
-      cout<<"The initial e+ and e- are required to be involved uniformly in all the events."<<endl<<endl;
+      cout<<"The initial state particles are set to be";
+      writePnmFromPid(cout,"TxtPnm",m_pidOfISt1);
+      cout<<" and";
+      writePnmFromPid(cout,"TxtPnm",m_pidOfISt2);
+      cout<<"."<<endl<<endl;
     }
   else
     {
-      if(m_vbsLevStdOut==true) cout<<"The initial e+ and e- are not required to be involved uniformly in all the events (default)."<<endl<<endl;
+      if(m_vbsLevStdOut==true) cout<<"The initial state particles are e- and e+ (default)."<<endl<<endl;
     }
 
-  if((m_cardFlNm.size()>5&&m_mainNmOfOptFls!=m_cardFlNm.substr(0,(m_cardFlNm.size()-5)))&&(m_mainNmOfOptFls!=m_cardFlNm))
+  if(m_iStPsSwitch==true)
     {
-      cout<<"Main name of output files: "<<m_mainNmOfOptFls<<endl<<endl;
+      cout<<"The initial state particles are required to be pushed front uniformly in all the events."<<endl<<endl;
     }
   else
     {
-      if(m_vbsLevStdOut==true) cout<<"Main name of output files: "<<m_mainNmOfOptFls<<" (default)"<<endl<<endl;
+      if(m_vbsLevStdOut==true) cout<<"The initial state particles are not required to be pushed front uniformly in all the events (default)."<<endl<<endl;
+    }
+
+  if((m_cardFlNm.size()>5&&m_comNmOfOptFls!=m_cardFlNm.substr(0,(m_cardFlNm.size()-5)))&&(m_comNmOfOptFls!=m_cardFlNm))
+    {
+      cout<<"Common name of output files: "<<m_comNmOfOptFls<<endl<<endl;
+    }
+  else
+    {
+      if(m_vbsLevStdOut==true) cout<<"Common name of output files: "<<m_comNmOfOptFls<<" (default)"<<endl<<endl;
     }
 
   if(m_cmpltHVLines==true)
@@ -2679,6 +3029,43 @@ void topoana::checkInput()
   else
     {
       if(m_vbsLevStdOut==true) cout<<"Input tbranches will not be removed from output root files (default)."<<endl<<endl;
+    }
+
+  if(m_convtMSIMSDIntoAOI==true)
+    {
+      if(m_strgTpOfRawIptTopoDat=="MSI"||m_strgTpOfRawIptTopoDat=="MSD")
+        {
+          cout<<"MSI/MSD input tbranches will be converted into AOI output tbranches."<<endl;
+
+          m_rmIptTBrs=true;
+          cerr<<"Infor: The item prompted with \"% Remove input tbranches from output root files (Two options: Y and N. Default: N)\" is set to Y in order to carry out the conversion."<<endl<<endl;
+        }
+      else
+        {
+          cerr<<"Warning: the setting with the item prompted with \"% Convert MSI/MSD input tbranches into AOI output tbranches (Two options: Y and N. Default: N)\" does not work for the current cases of AOI/VOI input tbranches."<<endl<<endl;
+        }
+    }
+  else
+    {
+      if(m_vbsLevStdOut==true) cout<<"MSI/MSD input tbranches will not be converted into AOI output tbranches (default)."<<endl<<endl;
+    }
+
+  if(m_supprOptRootFls==true)
+    {
+      cout<<"Output root files will be suppressed."<<endl<<endl;
+    }
+  else
+    {
+      if(m_vbsLevStdOut==true) cout<<"Output root files will not be suppressed (default)."<<endl<<endl;
+    }
+
+  if(m_flatArrayBrsLocally==true)
+    {
+      cout<<"Flat array tbranches locally in each output root file."<<endl<<endl;
+    }
+  else
+    {
+      if(m_vbsLevStdOut==true) cout<<"Flat array tbranches globally in all the output root files (default)."<<endl<<endl;
     }
 
   if(m_vbsLevStdOut==true)
